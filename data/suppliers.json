@@ -1,0 +1,5 @@
+[
+  { "supplier": "lees", "enabled": true, "contact": "+85512345678" },
+  { "supplier": "coca company", "enabled": true, "contact": "+85587654321" },
+  { "supplier": "alt supplier", "enabled": false, "contact": "+85500000000" }
+]

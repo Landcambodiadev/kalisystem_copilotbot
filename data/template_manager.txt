@@ -1,0 +1,3 @@
+Manager review required:
+{items}
+Confirm completion or report issues.

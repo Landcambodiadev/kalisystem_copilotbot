@@ -1,0 +1,6 @@
+[
+  { "category_id": 101, "category_name": "Cheese", "parent_category": "kitchen" },
+  { "category_id": 102, "category_name": "Pork", "parent_category": "kitchen" },
+  { "category_id": 201, "category_name": "Sodas", "parent_category": "bar" },
+  { "category_id": 202, "category_name": "Beers", "parent_category": "bar" }
+]

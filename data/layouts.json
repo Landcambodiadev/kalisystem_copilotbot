@@ -1,0 +1,7 @@
+{
+  "order_layout": "{item_name} x {qty} ({unit}) from {supplier}",
+  "kitchen_template": "Kitchen Order: {items}",
+  "bar_template": "Bar Order: {items}",
+  "manager_template": "Manager Review: {items}",
+  "supplier_request_template": "Supplier Request: {items}"
+}

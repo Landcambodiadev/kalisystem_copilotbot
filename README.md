@@ -1,0 +1,71 @@
+# kalisystem_copilotbot
+
+Telegram order bot for easy kitchen/bar/manager/supplier order management.
+
+## Structure
+
+```
+src/orderbot.ts        # Main bot code
+data/                  # All static data files (items, categories, suppliers, templates)
+.env.example           # Environment configuration example
+Dockerfile             # For Docker deployment
+README.md              # This file
+```
+
+## Setup
+
+1. **Clone repo & install dependencies:**
+   ```sh
+   git clone https://github.com/YOUR_USERNAME/kalisystem_copilotbot.git
+   cd kalisystem_copilotbot
+   npm install
+   ```
+
+2. **Environment:**
+   - Copy `.env.example` to `.env` and fill in your Telegram bot token and admin user ID.
+   - Get your Telegram user ID by messaging [@userinfobot](https://t.me/userinfobot).
+
+3. **Run locally:**
+   ```sh
+   npx ts-node src/orderbot.ts
+   ```
+
+## Docker Deployment
+
+1. Build and run:
+   ```sh
+   docker build -t kalisystem_copilotbot .
+   docker run -d --name kalisystem_copilotbot \
+      -e BOT_TOKEN=your_bot_token \
+      -e ADMIN_USER_ID=your_user_id \
+      kalisystem_copilotbot
+   ```
+
+## PM2 Deployment
+
+1. Install PM2:
+   ```sh
+   npm install -g pm2
+   ```
+2. Start the bot:
+   ```sh
+   pm2 start src/orderbot.ts --interpreter ./node_modules/.bin/ts-node --name kalisystem_copilotbot
+   pm2 save
+   pm2 startup
+   ```
+
+## Data files
+
+- Place all files in the `/data` folder.
+- You can edit/add categories/items/suppliers/templates as needed.
+- Admin commands (`/admin`) allow import/export/edit/share/restore of the files.
+
+## Features
+
+- Order flow for kitchen/bar/manager/supplier
+- Admin file management via Telegram
+- Simple JSON/CSV file formats for easy editing
+
+---
+
+Need more features? PRs and issues welcome!

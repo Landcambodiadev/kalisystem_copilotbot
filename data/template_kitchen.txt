@@ -1,0 +1,3 @@
+Kitchen order for today:
+{items}
+Please prepare the following.

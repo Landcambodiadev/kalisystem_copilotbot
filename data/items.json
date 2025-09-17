@@ -1,0 +1,20 @@
+[
+  {
+    "item_sku": "mozzarella",
+    "item_name": "Mozzarella Cheese",
+    "category_id": 101,
+    "source": "kitchen",
+    "supplier": "lees",
+    "price": 12,
+    "unit": "kg"
+  },
+  {
+    "item_sku": "cola",
+    "item_name": "Cola",
+    "category_id": 201,
+    "source": "bar",
+    "supplier": "coca company",
+    "price": 1,
+    "unit": "bottle"
+  }
+]
