@@ -1,45 +1,45 @@
-category_id,category_name,parent_category
-20000,🧼Cleaning for kitchen,kitchen
-20100,📦Box,kitchen
-20200,🛍️Ustensil,kitchen
-20300,🛍️Plastic bag,kitchen
-20400,🎁kitchen roll,kitchen
-20500,🧀Cheese,kitchen
-20600,🥣Cream,kitchen
-20700,🥚Eggs,kitchen
-20800,🧈Butter,kitchen
-20900,🍟French fries,kitchen
-21000,🐷Pork,kitchen
-21100,🐮 Beef,kitchen
-21200,🐔 Chicken,kitchen
-21300,🐟Fish,kitchen
-21400,🦞Seafood,kitchen
-21500,🥒Picked,kitchen
-21600,🍚Rice,kitchen
-21700,🍜Noodle,kitchen
-21800,🍝Pastas,kitchen
-21900,🍞Baking,kitchen
-22000,🥫Can,kitchen
-22100,🌿Herbs (dried),kitchen
-22200,🧂Seasoning,kitchen
-22300,🫙Sauce,kitchen
-22400,🥦Veg,kitchen
-22500,🌿Herbs (fresh),kitchen
-30000,🥤Sodas,bar
-30100,💧Water,bar
-30200,🧃Fruit juices,bar
-30300,🧋Syrup,bar
-30400,☕Coffee,bar
-30500,🥛Milk,bar
-30600,🫖Tea,bar
-30700,🍺Beers,bar
-30800,🍷Wines,bar
-30900,🚬Cigs,bar
-31000,🥃Spirits,bar
-31100,🍑Fruits,bar
-31200,🍨Desserts,bar
-31300,🛍️Plastic bag,bar
-31400,🛍️Cup,bar
-31500,🛍️Ustensils,bar
-31600,🖨️Office,bar
-31700,🧼Cleaning,bar
+category_id,category_name,parent_category,sub-category
+20000,🧼Cleaning for kitchen,kitchen,cleaning
+20100,📦Box,kitchen,plastics
+20200,🛍️Ustensil,kitchen,plastics
+20300,🛍️Plastic bag,kitchen,plastics
+20400,🎁kitchen roll,kitchen,plastics
+20500,🧀Cheese,kitchen,dairy
+20600,🥣Cream,kitchen,dairy
+20700,🥚Eggs,kitchen,dairy
+20800,🧈Butter,kitchen,dairy
+20900,🍟French fries,kitchen,dairy
+21000,🐷Pork,kitchen,meat
+21100,🐮 Beef,kitchen,meat
+21200,🐔 Chicken,kitchen,meat
+21300,🐟Fish,kitchen,fish/seafood
+21400,🦞Seafood,kitchen,fish/seafood
+21500,🥒Picked,kitchen,condiments
+21600,🍚Rice,kitchen,dry
+21700,🍜Noodle,kitchen,dry
+21800,🍝Pastas,kitchen,dry
+21900,🍞Baking,kitchen,dry
+22000,🥫Can,kitchen,dry
+22100,🌿Herbs (dried),kitchen,spices
+22200,🧂Seasoning,kitchen,spices
+22300,🫙Sauce,kitchen,sauces
+22400,🥦Veg,kitchen,veggies
+22500,🌿Herbs (fresh),kitchen,veggies
+30000,🥤Sodas,bar,soft
+30100,💧Water,bar,soft
+30200,🧃Fruit juices,bar,soft
+30300,🧋Syrup,bar,coffee/tea/syrup
+30400,☕Coffee,bar,coffee/tea/syrup
+30500,🥛Milk,bar,soft
+30600,🫖Tea,bar,coffee/tea/syrup
+30700,🍺Beers,bar,alcohol
+30800,🍷Wines,bar,alcohol
+30900,🚬Cigs,bar,cigs
+31000,🥃Spirits,bar,alcohol
+31100,🍑Fruits,bar,fruits
+31200,🍨Desserts,bar,ingredients
+31300,🛍️Plastic bag,bar,households
+31400,🛍️Cup,bar,households
+31500,🛍️Ustensils,bar,households
+31600,🖨️Office,bar,households
+31700,🧼Cleaning,bar,households
