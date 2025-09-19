@@ -240,7 +240,6 @@ bot.callbackQuery(/approve_item:(.+):(.+)/, async ctx => {
       reply_markup: dispatchKeyboard
     }
   );
-  );
   
   // Store for dispatcher tracking
   pendingDispatch[dispatchMessage.message_id] = {
@@ -312,7 +311,6 @@ bot.callbackQuery(/dispatch_approve:(.+):(.+)/, async ctx => {
       is_anonymous: false
     }
   );
-  );
   
   // Store poll for completion tracking
   pendingPolls[pollMessage.poll?.id || ''] = {
@@ -378,7 +376,6 @@ bot.on('poll_answer', async (ctx) => {
         reply_markup: completedKeyboard
       }
     );
-    );
     
     // Clean up poll tracking
     delete pendingPolls[pollId];
@@ -434,7 +431,6 @@ bot.on(['message:text', 'message:photo', 'message:voice'], async (ctx, next) => 
         message_thread_id: MANAGER_TOPIC_ID,
         reply_markup: approvalKeyboard
       }
-    );
     );
     
     await ctx.reply("✅ Custom request sent to managers for approval.");
