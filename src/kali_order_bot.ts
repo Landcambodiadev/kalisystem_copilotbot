@@ -5,6 +5,22 @@ import path from 'path';
 // === CONFIG ===
 const BOT_TOKEN = process.env.BOT_TOKEN!;
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID!;
+
+// Debug: Check if environment variables are loaded
+console.log('[DEBUG] Bot starting with config:');
+console.log('[DEBUG] BOT_TOKEN loaded:', BOT_TOKEN ? 'YES' : 'NO');
+console.log('[DEBUG] ADMIN_USER_ID loaded:', ADMIN_USER_ID ? `YES (${ADMIN_USER_ID})` : 'NO');
+
+if (!BOT_TOKEN) {
+  console.error('[ERROR] BOT_TOKEN is missing from environment variables');
+  process.exit(1);
+}
+
+if (!ADMIN_USER_ID) {
+  console.error('[ERROR] ADMIN_USER_ID is missing from environment variables');
+  process.exit(1);
+}
+
 const DATA_DIR = "./data";
 const ITEM_CSV = `${DATA_DIR}/items.csv`;
 const ITEM_JSON = `${DATA_DIR}/items.json`;
@@ -20,7 +36,20 @@ const ADMIN_TOPIC_ID = 82;          // admin topic/group (replace)
 
 // === ADMIN ACCESS CONTROL ===
 function isAdminPrivateChat(ctx: any): boolean {
-  return ctx.chat?.type === 'private' && String(ctx.from?.id) === ADMIN_USER_ID;
+  const userId = String(ctx.from?.id);
+  const chatType = ctx.chat?.type;
+  const isPrivate = chatType === 'private';
+  const isCorrectAdmin = userId === ADMIN_USER_ID;
+  
+  console.log('[DEBUG] isAdminPrivateChat check:');
+  console.log('[DEBUG] - User ID:', userId);
+  console.log('[DEBUG] - Chat type:', chatType);
+  console.log('[DEBUG] - Is private chat:', isPrivate);
+  console.log('[DEBUG] - Is correct admin:', isCorrectAdmin);
+  console.log('[DEBUG] - Expected admin ID:', ADMIN_USER_ID);
+  console.log('[DEBUG] - Final result:', isPrivate && isCorrectAdmin);
+  
+  return isPrivate && isCorrectAdmin;
 }
 
 // === DATA LOADING ===
@@ -77,6 +106,22 @@ function handlePaymentStatus(order: any, status: string) {
 
 // === BOT INSTANCE ===
 const bot = new Bot(BOT_TOKEN);
+
+// Add global error handler
+bot.catch((err) => {
+  console.error('[ERROR] Bot error occurred:', err);
+});
+
+// Add debug logging for all messages
+bot.use(async (ctx, next) => {
+  if (ctx.message) {
+    console.log(`[DEBUG] Message received: "${ctx.message.text}" from user ${ctx.from?.id} in chat ${ctx.chat?.id} (type: ${ctx.chat?.type})`);
+  }
+  if (ctx.callbackQuery) {
+    console.log(`[DEBUG] Callback query: "${ctx.callbackQuery.data}" from user ${ctx.from?.id}`);
+  }
+  await next();
+});
 
 // === USER FLOW ===
 // Simple context tracking per user (for demo, not persistent)
@@ -395,10 +440,24 @@ bot.callbackQuery(/file_edit_template:(\w+)/, async ctx => {
 
 // --- Admin: View Supplier Orders (on Dispatch) ---
 bot.command("admin", async ctx => {
+  console.log(`[DEBUG] /admin command received!`);
   console.log(`[DEBUG] /admin command triggered by user ${ctx.from?.id} in chat ${ctx.chat?.id}`);
-  if (!isAdminPrivateChat(ctx)) return ctx.reply("Access denied. Admin commands only work in private chat with the bot.");
+  console.log(`[DEBUG] Chat type: ${ctx.chat?.type}`);
+  console.log(`[DEBUG] From user: ${ctx.from?.username || 'no username'} (ID: ${ctx.from?.id})`);
+  
+  if (!isAdminPrivateChat(ctx)) {
+    console.log('[DEBUG] Admin access denied - sending error message');
+    return ctx.reply("Access denied. Admin commands only work in private chat with the bot.");
+  }
+  
   console.log("[DEBUG] Admin access granted, showing menu");
-  await ctx.reply("Admin Menu:", { reply_markup: adminMenuKeyboard });
+  
+  try {
+    await ctx.reply("Admin Menu:", { reply_markup: adminMenuKeyboard });
+    console.log("[DEBUG] Admin menu sent successfully");
+  } catch (error) {
+    console.error("[ERROR] Failed to send admin menu:", error);
+  }
 });
 
 // --- Edit Files Menu ---
@@ -673,4 +732,10 @@ bot.command("admin_help", async ctx => {
   );
 });
 
-bot.start();
+console.log('[DEBUG] Starting bot...');
+bot.start().then(() => {
+  console.log('[DEBUG] Bot started successfully!');
+}).catch((error) => {
+  console.error('[ERROR] Failed to start bot:', error);
+  process.exit(1);
+});
