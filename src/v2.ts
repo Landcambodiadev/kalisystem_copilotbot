@@ -173,68 +173,67 @@ bot.callbackQuery(/add_to_order:(.+)/, async ctx => {
   
   await ctx.answerCallbackQuery("✅ Sent for manager approval");
   
-  // V2 Flow: Send directly to Manager Topic for approval
-  const approvalKeyboard = new InlineKeyboard()
-    .text("✅ Approve", `approve_item:${itemId}:${topicId}`)
-    .text("❌ Reject", `reject_item:${itemId}:${topicId}`);
-  
-  const managerMessage = await bot.api.sendMessage(GROUP_CHAT_ID, 
-    `📋 Manager Approval Required:\n${item.category_name || ''} ${item.item_name}\nRequested by: ${ctx.from?.username || ctx.from?.first_name || 'Unknown'}`, 
-    { 
+  // V2 Flow: Send quantity poll to Manager Topic
+  console.log(`[DEBUG] Sending quantity poll to Manager Topic (ID: ${MANAGER_TOPIC_ID}) for item: ${item.item_name}`);
+  const pollMessage = await bot.api.sendPoll(
+    GROUP_CHAT_ID,
+    `${item.item_name} - How many ${item.measure_unit}?`,
+    ['1', '2', '3', '4', '5', '6'],
+    {
       message_thread_id: MANAGER_TOPIC_ID,
-      reply_markup: approvalKeyboard
+      is_anonymous: true,
+      allows_multiple_answers: false
     }
   );
   
-  // Store for tracking
-  pendingApprovals[managerMessage.message_id] = {
+  // Store for quantity tracking
+  pendingApprovals[pollMessage.poll?.id || ''] = {
     item: item,
     topicId: topicId,
-    requestedBy: ctx.from?.username || ctx.from?.first_name || 'Unknown'
+    requestedBy: ctx.from?.username || ctx.from?.first_name || 'Unknown',
+    pollMessageId: pollMessage.message_id
   };
+  console.log(`[DEBUG] Quantity poll created with ID: ${pollMessage.poll?.id} for item: ${item.item_name}`);
 });
 
-// --- Manager Approval ---
-bot.callbackQuery(/approve_item:(.+):(.+)/, async ctx => {
-  const itemId = ctx.match![1];
-  const topicId = Number(ctx.match![2]);
-  const messageId = ctx.callbackQuery.message?.message_id;
+// --- Manager Quantity Poll Answer Handler ---
+bot.on('poll_answer', async (ctx) => {
+  const pollId = ctx.pollAnswer.poll_id;
+  const userId = ctx.pollAnswer.user?.id;
+  const selectedOption = ctx.pollAnswer.option_ids[0]; // Get first selected option (0-5 for options 1-6)
   
-  if (!messageId || !pendingApprovals[messageId]) {
-    return await ctx.answerCallbackQuery("Approval record not found");
+  if (!pendingApprovals[pollId]) {
+    return; // Poll not tracked for approval
   }
   
-  const approval = pendingApprovals[messageId];
+  const approval = pendingApprovals[pollId];
   const item = approval.item;
+  const quantity = selectedOption + 1; // Convert 0-5 to 1-6
   
-  // Post approved item to the appropriate topic
-  await bot.api.sendMessage(GROUP_CHAT_ID, `🛒 ${item.category_name || ''} ${item.item_name}`, { 
-    message_thread_id: topicId 
+  console.log(`[DEBUG] Manager selected quantity ${quantity} for item: ${item.item_name}`);
+  
+  // Post approved item with quantity to the appropriate topic
+  await bot.api.sendMessage(GROUP_CHAT_ID, `🛒 ${item.category_name || ''} ${item.item_name} x${quantity}`, { 
+    message_thread_id: approval.topicId 
   });
-  console.log(`[DEBUG] Approved item posted to Topic (ID: ${topicId}) for item: ${item.item_name}`);
-  
-  console.log(`[DEBUG] Message posted to Manager Topic (ID: ${MANAGER_TOPIC_ID}) for item: ${item.item_name}`);
-  // Edit manager message to show approval
-  await ctx.editMessageText(
-    `✅ APPROVED: ${item.category_name || ''} ${item.item_name}\nRequested by: ${approval.requestedBy}`,
-    { reply_markup: undefined }
-  );
+  console.log(`[DEBUG] Approved item with quantity posted to Topic (ID: ${approval.topicId}) for item: ${item.item_name} x${quantity}`);
   
   // Get supplier info
   const suppliers = loadJson(SUPPLIER_JSON);
   const supplier = suppliers.find((s: any) => s.supplier.toLowerCase() === item.default_supplier?.toLowerCase()) || 
                   { supplier: item.default_supplier || 'Unknown Supplier' };
   
-  // Send to Dispatcher Topic
+  // Send directly to Dispatcher Topic with quantity
   const dispatchKeyboard = new InlineKeyboard()
-    .text("✅ Approve", `dispatch_approve:${itemId}:${messageId}`)
-    .text("❌ Reject", `dispatch_reject:${itemId}:${messageId}`);
+    .text("✅ Approve", `dispatch_approve:${item.item_sku}:${pollId}`)
+    .text("❌ Reject", `dispatch_reject:${item.item_sku}:${pollId}`);
   
   const now = new Date();
   const dateStamp = `${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1).toString().padStart(2, '0')}.${now.getFullYear().toString().slice(-2)} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
   
+  console.log(`[DEBUG] Sending to Dispatcher Topic (ID: ${DISPATCHER_TOPIC_ID}) for item: ${item.item_name} x${quantity}`);
   const dispatchMessage = await bot.api.sendMessage(GROUP_CHAT_ID,
-    `📦 Dispatcher Review:\n\n<<${supplier.supplier}>>\n${item.item_name} ${item.default_quantity || 1}\n•\n\n${dateStamp}`,
+    `📦 Dispatcher Review:\n\n<<${supplier.supplier}>>\n${item.item_name} ${quantity} ${item.measure_unit}\n•\n\n${dateStamp}`,
     {
       message_thread_id: DISPATCHER_TOPIC_ID,
       reply_markup: dispatchKeyboard
@@ -244,47 +243,21 @@ bot.callbackQuery(/approve_item:(.+):(.+)/, async ctx => {
   // Store for dispatcher tracking
   pendingDispatch[dispatchMessage.message_id] = {
     item: item,
+    quantity: quantity,
     supplier: supplier.supplier,
-    originalApprovalId: messageId,
+    originalPollId: pollId,
     dateStamp: dateStamp
   };
-  console.log(`[DEBUG] Dispatcher review message posted to Dispatcher Topic (ID: ${DISPATCHER_TOPIC_ID}) for item: ${item.item_name}`);
+  console.log(`[DEBUG] Dispatcher review message posted to Dispatcher Topic (ID: ${DISPATCHER_TOPIC_ID}) for item: ${item.item_name} x${quantity}`);
   
   // Clean up approval tracking
-  delete pendingApprovals[messageId];
-  
-  await ctx.answerCallbackQuery("✅ Item approved and sent to dispatcher");
-});
-
-// --- Manager Rejection ---
-bot.callbackQuery(/reject_item:(.+):(.+)/, async ctx => {
-  const itemId = ctx.match![1];
-  const topicId = Number(ctx.match![2]);
-  const messageId = ctx.callbackQuery.message?.message_id;
-  
-  if (!messageId || !pendingApprovals[messageId]) {
-    return await ctx.answerCallbackQuery("Approval record not found");
-  }
-  
-  const approval = pendingApprovals[messageId];
-  const item = approval.item;
-  
-  // Edit manager message to show rejection
-  await ctx.editMessageText(
-    `❌ REJECTED: ${item.category_name || ''} ${item.item_name}\nRequested by: ${approval.requestedBy}`,
-    { reply_markup: undefined }
-  );
-  
-  // Clean up approval tracking
-  delete pendingApprovals[messageId];
-  
-  await ctx.answerCallbackQuery("❌ Item rejected");
+  delete pendingApprovals[pollId];
 });
 
 // --- Dispatcher Approval ---
 bot.callbackQuery(/dispatch_approve:(.+):(.+)/, async ctx => {
   const itemId = ctx.match![1];
-  const originalApprovalId = ctx.match![2];
+  const originalPollId = ctx.match![2];
   const messageId = ctx.callbackQuery.message?.message_id;
   
   if (!messageId || !pendingDispatch[messageId]) {
@@ -296,15 +269,16 @@ bot.callbackQuery(/dispatch_approve:(.+):(.+)/, async ctx => {
   
   // Edit dispatcher message to show approval
   await ctx.editMessageText(
-    `✅ DISPATCHED: <<${dispatch.supplier}>>\n${item.item_name} ${item.default_quantity || 1}\n•\n\n${dispatch.dateStamp}`,
+    `✅ DISPATCHED: <<${dispatch.supplier}>>\n${item.item_name} ${dispatch.quantity} ${item.measure_unit}\n•\n\n${dispatch.dateStamp}`,
     { reply_markup: undefined }
   );
   
+  console.log(`[DEBUG] Sending poll to Processing Topic (ID: ${PROCESSING_TOPIC_ID}) for item: ${item.item_name} x${dispatch.quantity}`);
   // Create poll for Processing Topic
   const pollMessage = await bot.api.sendPoll(
     GROUP_CHAT_ID,
     `Confirm receipt of items from ${dispatch.supplier} - ${dispatch.dateStamp}?`,
-    [`${item.item_name} (${item.default_quantity || 1})`],
+    [`${item.item_name} (${dispatch.quantity} ${item.measure_unit})`],
     {
       message_thread_id: PROCESSING_TOPIC_ID,
       allows_multiple_answers: true,
@@ -315,11 +289,12 @@ bot.callbackQuery(/dispatch_approve:(.+):(.+)/, async ctx => {
   // Store poll for completion tracking
   pendingPolls[pollMessage.poll?.id || ''] = {
     item: item,
+    quantity: dispatch.quantity,
     supplier: dispatch.supplier,
     dateStamp: dispatch.dateStamp,
     messageId: pollMessage.message_id
   };
-  console.log(`[DEBUG] Poll posted to Processing Topic (ID: ${PROCESSING_TOPIC_ID}) for item: ${item.item_name}`);
+  console.log(`[DEBUG] Poll posted to Processing Topic (ID: ${PROCESSING_TOPIC_ID}) for item: ${item.item_name} x${dispatch.quantity}`);
   
   // Clean up dispatch tracking
   delete pendingDispatch[messageId];
@@ -330,7 +305,7 @@ bot.callbackQuery(/dispatch_approve:(.+):(.+)/, async ctx => {
 // --- Dispatcher Rejection ---
 bot.callbackQuery(/dispatch_reject:(.+):(.+)/, async ctx => {
   const itemId = ctx.match![1];
-  const originalApprovalId = ctx.match![2];
+  const originalPollId = ctx.match![2];
   const messageId = ctx.callbackQuery.message?.message_id;
   
   if (!messageId || !pendingDispatch[messageId]) {
@@ -342,7 +317,7 @@ bot.callbackQuery(/dispatch_reject:(.+):(.+)/, async ctx => {
   
   // Edit dispatcher message to show rejection
   await ctx.editMessageText(
-    `❌ DISPATCH REJECTED: <<${dispatch.supplier}>>\n${item.item_name} ${item.default_quantity || 1}\n•\n\n${dispatch.dateStamp}`,
+    `❌ DISPATCH REJECTED: <<${dispatch.supplier}>>\n${item.item_name} ${dispatch.quantity} ${item.measure_unit}\n•\n\n${dispatch.dateStamp}`,
     { reply_markup: undefined }
   );
   
@@ -352,25 +327,27 @@ bot.callbackQuery(/dispatch_reject:(.+):(.+)/, async ctx => {
   await ctx.answerCallbackQuery("❌ Dispatch rejected");
 });
 
-// --- Poll Answer Handler (Processing Completion) ---
+// --- Processing Poll Answer Handler (Order Completion) ---
 bot.on('poll_answer', async (ctx) => {
   const pollId = ctx.pollAnswer.poll_id;
   const userId = ctx.pollAnswer.user?.id;
   
+  // Check if this is a processing completion poll
   if (!pendingPolls[pollId]) {
-    return; // Poll not tracked
+    return; // Poll not tracked for processing completion
   }
   
   const poll = pendingPolls[pollId];
   
   // Check if all options are selected (simplified for single item)
   if (ctx.pollAnswer.option_ids.length > 0) {
+    console.log(`[DEBUG] Sending completion message to Completed Topic (ID: ${COMPLETED_TOPIC_ID}) for item: ${poll.item.item_name} x${poll.quantity}`);
     // Send completion message to Completed Topic
     const completedKeyboard = new InlineKeyboard()
       .text("📊 CRM", `crm_update:${pollId}`);
     
     await bot.api.sendMessage(GROUP_CHAT_ID,
-      `🎉 COMPLETED!\n\n<<${poll.supplier}>>\n${poll.item.item_name} ${poll.item.default_quantity || 1}\n•\n\n${poll.dateStamp}`,
+      `🎉 COMPLETED!\n\n<<${poll.supplier}>>\n${poll.item.item_name} ${poll.quantity} ${poll.item.measure_unit}\n•\n\n${poll.dateStamp}`,
       {
         message_thread_id: COMPLETED_TOPIC_ID,
         reply_markup: completedKeyboard
@@ -380,7 +357,7 @@ bot.on('poll_answer', async (ctx) => {
     // Clean up poll tracking
     delete pendingPolls[pollId];
     
-    console.log(`[DEBUG] Order completed for ${poll.item.item_name} from ${poll.supplier}`);
+    console.log(`[DEBUG] Order completed for ${poll.item.item_name} x${poll.quantity} from ${poll.supplier}`);
   }
 });
 
