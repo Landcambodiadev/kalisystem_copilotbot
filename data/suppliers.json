@@ -1,5 +1,332 @@
 [
-  { "supplier": "lees", "enabled": true, "contact": "+85512345678" },
-  { "supplier": "coca company", "enabled": true, "contact": "+85587654321" },
-  { "supplier": "alt supplier", "enabled": false, "contact": "+85500000000" }
+  {
+    "supplier_id": 10000,
+    "supplier": "7 Eleven",
+    "supplier_type": "Mart",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10001,
+    "supplier": "Angkor Company",
+    "supplier_type": "Distributor",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10002,
+    "supplier": "Baker",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10003,
+    "supplier": "Baker Supplies",
+    "supplier_type": "Wholesaler",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10004,
+    "supplier": "7 Jan Bakery",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10005,
+    "supplier": "Chanorai",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10006,
+    "supplier": "Chinese Mart",
+    "supplier_type": "Mart",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10007,
+    "supplier": "Cmb",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10008,
+    "supplier": "Coca Company",
+    "supplier_type": "Distributor",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10009,
+    "supplier": "Cp Food",
+    "supplier_type": "Distributor",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10010,
+    "supplier": "Dessert Shop",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10011,
+    "supplier": "Drink Shop",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10012,
+    "supplier": "Ebc",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10013,
+    "supplier": "Foody",
+    "supplier_type": "Mart",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10014,
+    "supplier": "Granny",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10015,
+    "supplier": "Hong Kong Shop",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10016,
+    "supplier": "Kitchen Equipment",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10017,
+    "supplier": "Kofi",
+    "supplier_type": "Distributor",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10018,
+    "supplier": "Lees",
+    "supplier_type": "Distributor",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10019,
+    "supplier": "Market",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10020,
+    "supplier": "Noodle Maker",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10021,
+    "supplier": "Otres Big Market",
+    "supplier_type": "Wholesaler",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10022,
+    "supplier": "Takaway Shop",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10023,
+    "supplier": "Pizza+",
+    "supplier_type": "Wholesaler",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10024,
+    "supplier": "Pp Distributor",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10025,
+    "supplier": "Pisey",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10026,
+    "supplier": "Rodina",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10027,
+    "supplier": "Samu",
+    "supplier_type": "Mart",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10028,
+    "supplier": "Sara",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10029,
+    "supplier": "Savuth",
+    "supplier_type": "Wholesaler",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10030,
+    "supplier": "Stock",
+    "supplier_type": "Local",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10031,
+    "supplier": "Tiger Company",
+    "supplier_type": "Distributor",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  },
+  {
+    "supplier_id": 10032,
+    "supplier": "Khmer Beverage",
+    "supplier_type": "Distributor",
+    "telegram_id": "",
+    "qr_code": "",
+    "location": "",
+    "tags": "",
+    "enabled": true
+  }
 ]

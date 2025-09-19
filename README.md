@@ -34,14 +34,10 @@ README.md              # This file
 
 1. Build and run:
    ```sh
-   docker build -t kalisystem_copilotbot .
-   docker run -d --name kalisystem_copilotbot \
-      -e BOT_TOKEN=your_bot_token \
-      -e ADMIN_USER_ID=your_user_id \
-      kalisystem_copilotbot
-   ```
-
-## PM2 Deployment
+   docker build -t kalisystem_bot .
+   docker run -d --name kalisystem_bot \
+      -e BOT_TOKEN= \
+      -e ADMIN_USER_ID= \
 
 1. Install PM2:
    ```sh
@@ -49,7 +45,7 @@ README.md              # This file
    ```
 2. Start the bot:
    ```sh
-   pm2 start src/orderbot.ts --interpreter ./node_modules/.bin/ts-node --name kalisystem_copilotbot
+   pm2 start src/kali_order_bot.ts --interpreter ./node_modules/.bin/ts-node --name kalisystem_bot
    pm2 save
    pm2 startup
    ```
@@ -57,6 +53,10 @@ README.md              # This file
 ## Data files
 
 - Place all files in the `/data` folder.
+      kalisystem_bot
+   ```
+
+## PM2 Deployment
 - You can edit/add categories/items/suppliers/templates as needed.
 - Admin commands (`/admin`) allow import/export/edit/share/restore of the files.
 
