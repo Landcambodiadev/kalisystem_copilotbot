@@ -141,6 +141,8 @@ bot.callbackQuery(["select_kitchen", "select_bar"], async ctx => {
 bot.hears(["meat", "fish/seafood", "dairy", "veggies", "spices", "dry", "sauce", "cleaning", "plastics", 
           "soft", "alcohol", "coffee/tea/syrup", "cigs", "households", "fruits", "ingredients"], async ctx => {
   const subCategory = ctx.message!.text;
+  if (!subCategory) return;
+  
   const items = loadJson(ITEM_JSON).filter((i: any) => i.sub_category === subCategory);
   
   if (items.length === 0) {
