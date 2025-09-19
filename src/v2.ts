@@ -212,6 +212,14 @@ bot.on('poll_answer', async (ctx) => {
   
   console.log(`[DEBUG] Manager selected quantity ${quantity} for item: ${item.item_name}`);
   
+  // Close the poll
+  try {
+    await bot.api.stopPoll(GROUP_CHAT_ID, approval.pollMessageId);
+    console.log(`[DEBUG] Poll closed for item: ${item.item_name}`);
+  } catch (error) {
+    console.error(`[ERROR] Failed to close poll for item ${item.item_name}:`, error);
+  }
+  
   // Post approved item with quantity to the appropriate topic
   await bot.api.sendMessage(GROUP_CHAT_ID, `🛒 ${item.category_name || ''} ${item.item_name} x${quantity}`, { 
     message_thread_id: approval.topicId 
@@ -232,6 +240,7 @@ bot.on('poll_answer', async (ctx) => {
   const dateStamp = `${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1).toString().padStart(2, '0')}.${now.getFullYear().toString().slice(-2)} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
   
   console.log(`[DEBUG] Sending to Dispatcher Topic (ID: ${DISPATCHER_TOPIC_ID}) for item: ${item.item_name} x${quantity}`);
+  console.log(`[DEBUG] Posting to GROUP_CHAT_ID: ${GROUP_CHAT_ID}, DISPATCHER_TOPIC_ID: ${DISPATCHER_TOPIC_ID}`);
   const dispatchMessage = await bot.api.sendMessage(GROUP_CHAT_ID,
     `📦 Dispatcher Review:\n\n<<${supplier.supplier}>>\n${item.item_name} ${quantity} ${item.measure_unit}\n•\n\n${dateStamp}`,
     {
@@ -239,6 +248,7 @@ bot.on('poll_answer', async (ctx) => {
       reply_markup: dispatchKeyboard
     }
   );
+  console.log(`[DEBUG] Dispatcher message sent with message_id: ${dispatchMessage.message_id}`);
   
   // Store for dispatcher tracking
   pendingDispatch[dispatchMessage.message_id] = {
