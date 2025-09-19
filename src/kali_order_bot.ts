@@ -395,7 +395,9 @@ bot.callbackQuery(/file_edit_template:(\w+)/, async ctx => {
 
 // --- Admin: View Supplier Orders (on Dispatch) ---
 bot.command("admin", async ctx => {
+  console.log(`[DEBUG] /admin command triggered by user ${ctx.from?.id} in chat ${ctx.chat?.id}`);
   if (!isAdminPrivateChat(ctx)) return ctx.reply("Access denied. Admin commands only work in private chat with the bot.");
+  console.log("[DEBUG] Admin access granted, showing menu");
   await ctx.reply("Admin Menu:", { reply_markup: adminMenuKeyboard });
 });
 
@@ -456,71 +458,72 @@ bot.on('message:text', async ctx => {
         saveJson(CATEGORY_JSON, json);
         await ctx.reply("Categories JSON updated!");
       } else if (Array.isArray(json) && json[0]?.supplier) {
-        backupFile(SUPPLIER_JSON);
-        saveJson(SUPPLIER_JSON, json);
-        await ctx.reply("Suppliers JSON updated!");
-      } else {
-        await ctx.reply("Unknown JSON structure.");
-      }
-    } catch {
-      await ctx.reply("Invalid JSON format.");
-    }
-  }
-});
-
-// --- Admin Edit Item Flow ---
-bot.callbackQuery("admin_edit_item", async ctx => {
-  const categories = loadJson(CATEGORY_JSON);
-  const menu = new InlineKeyboard();
-  categories.forEach((cat: any) =>
-    menu.text(cat.category_name, `admin_edit_cat:${cat.category_id}`).row()
-  );
-  await ctx.reply("Select a category to edit its items:", { reply_markup: menu });
-});
-
-bot.callbackQuery(/admin_edit_cat:(\d+)/, async ctx => {
-  const categoryId = Number(ctx.match![1]);
-  const items = loadJson(ITEM_JSON).filter((i: any) => i.category_id == categoryId);
-  const menu = new InlineKeyboard();
-  items.forEach((item: any) =>
-    menu.text(item.item_name, `admin_edit_item_json:${item.item_sku}`).row()
-  );
-  await ctx.reply("Select an item to edit:", { reply_markup: menu });
-});
-
-bot.callbackQuery(/admin_edit_item_json:(.+)/, async ctx => {
-  const itemSku = ctx.match![1];
-  const items = loadJson(ITEM_JSON);
-  const item = items.find((i: any) => String(i.item_sku) === itemSku);
-  if (!item) return await ctx.reply("Item not found.");
-  await ctx.reply(`Edit this item JSON and send back to update:\n\`\`\`json\n${JSON.stringify(item, null, 2)}\n\`\`\``);
-});
-
-// --- Admin Item JSON Update by Snippet ---
+// --- Consolidated Text Message Handler ---
 bot.on('message:text', async ctx => {
-  await ctx.reply(`[DEBUG] message:text handler triggered. chat.id=${ctx.chat?.id}`);
+  console.log(`[DEBUG] message:text handler triggered by user ${ctx.from?.id} in chat ${ctx.chat?.id}`);
   if (!isAdminPrivateChat(ctx)) return;
-  // If message is valid item JSON
-  if (ctx.message.text.trim().startsWith("{")) {
+  
+  const text = ctx.message.text.trim();
+  
+  // CSV Save Handler
+  if (text.startsWith("CSV Items")) {
+    const csvData = text.replace(/CSV Items \(edit and send back\):/i, "").trim();
+    backupFile(ITEM_CSV);
+    fs.writeFileSync(ITEM_CSV, csvData);
+    // Optionally convert to JSON
+    const items = importCSVtoItems(ITEM_CSV);
+    backupFile(ITEM_JSON);
+    saveJson(ITEM_JSON, items);
+    await ctx.reply("CSV updated and converted to JSON!");
+    return;
+  }
+  
+  // JSON Save Handler
+  if (text.startsWith("{") || text.startsWith("[")) {
     try {
-      const item = JSON.parse(ctx.message.text.trim());
-      if (item.item_sku) {
+      const json = JSON.parse(text);
+      
+      // Handle single item JSON
+      if (json.item_sku && !Array.isArray(json)) {
         let itemsArr = loadJson(ITEM_JSON);
-        const idx = itemsArr.findIndex((i: any) => i.item_sku == item.item_sku);
+        const idx = itemsArr.findIndex((i: any) => i.item_sku == json.item_sku);
         if (idx >= 0) {
-          itemsArr[idx] = item;
+          itemsArr[idx] = json;
           backupFile(ITEM_JSON);
           saveJson(ITEM_JSON, itemsArr);
           await ctx.reply("Item updated!");
         } else {
-          itemsArr.push(item);
+          itemsArr.push(json);
           backupFile(ITEM_JSON);
           saveJson(ITEM_JSON, itemsArr);
           await ctx.reply("Item created!");
         }
+        return;
       }
-    } catch {
-      await ctx.reply("Invalid item JSON.");
+      
+      // Handle array JSON - infer type by keys
+      if (Array.isArray(json) && json.length > 0) {
+        if (json[0]?.item_sku) {
+          backupFile(ITEM_JSON);
+          saveJson(ITEM_JSON, json);
+          await ctx.reply("Items JSON updated!");
+        } else if (json[0]?.category_id) {
+          backupFile(CATEGORY_JSON);
+          saveJson(CATEGORY_JSON, json);
+          await ctx.reply("Categories JSON updated!");
+        } else if (json[0]?.supplier) {
+          backupFile(SUPPLIER_JSON);
+          saveJson(SUPPLIER_JSON, json);
+          await ctx.reply("Suppliers JSON updated!");
+        } else {
+          await ctx.reply("Unknown JSON structure.");
+        }
+        return;
+      }
+      
+      await ctx.reply("Unknown JSON structure.");
+    } catch (error) {
+      await ctx.reply("Invalid JSON format.");
     }
   }
 });
@@ -646,7 +649,7 @@ bot.command("help", async ctx => {
   );
 });
 bot.command("admin_help", async ctx => {
-  await ctx.reply(`[DEBUG] admin_help handler triggered. chat.id=${ctx.chat?.id}`);
+  console.log(`[DEBUG] /admin_help command triggered by user ${ctx.from?.id} in chat ${ctx.chat?.id}`);
   if (!isAdminPrivateChat(ctx)) return ctx.reply("Access denied. Admin commands only work in private chat with the bot.");
   await ctx.reply(
     `Admin Flow:
