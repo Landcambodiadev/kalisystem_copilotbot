@@ -108,16 +108,65 @@ bot.command("start", async ctx => {
 // --- Show Categories ---
 bot.callbackQuery(["select_kitchen", "select_bar"], async ctx => {
   const parent = ctx.callbackQuery.data === "select_kitchen" ? "kitchen" : "bar";
-  const categories = loadJson(CATEGORY_JSON).filter((c: any) => c.parent_category === parent);
-  const catsKeyboard = new InlineKeyboard();
-  categories.forEach((cat: any) =>
-    catsKeyboard.text(cat.category_name, `show_items:${cat.category_id}`).row()
-  );
-  await ctx.editMessageText(
-    `Categories for ${parent.charAt(0).toUpperCase() + parent.slice(1)}:`,
-    { reply_markup: catsKeyboard }
-  );
+  
+  // Define sub-categories for each parent
+  const subCategories = {
+    kitchen: ["meat", "fish/seafood", "dairy", "veggies", "spices", "dry", "sauce", "cleaning", "plastics"],
+    bar: ["soft", "alcohol", "coffee/tea/syrup", "cigs", "households", "fruits", "ingredients"]
+  };
+  
+  const subCats = subCategories[parent as keyof typeof subCategories] || [];
+  const replyKeyboard = new Keyboard();
+  
+  // Add sub-category buttons in rows of 3
+  for (let i = 0; i < subCats.length; i += 3) {
+    const row = subCats.slice(i, i + 3);
+    replyKeyboard.text(row[0]);
+    if (row[1]) replyKeyboard.text(row[1]);
+    if (row[2]) replyKeyboard.text(row[2]);
+    replyKeyboard.row();
+  }
+  
+  replyKeyboard.text("🔙 Back to Main").resized();
+  
+  await ctx.editMessageText(`Select ${parent} sub-category:`);
+  await ctx.reply(`Choose a ${parent} sub-category:`, {
+    reply_markup: replyKeyboard
+  });
+  
   if (ctx.from) userContext[ctx.from.id] = "categories";
+});
+
+// --- Handle Sub-category Selection ---
+bot.hears(["meat", "fish/seafood", "dairy", "veggies", "spices", "dry", "sauce", "cleaning", "plastics", 
+          "soft", "alcohol", "coffee/tea/syrup", "cigs", "households", "fruits", "ingredients"], async ctx => {
+  const subCategory = ctx.message.text;
+  const items = loadJson(ITEM_JSON).filter((i: any) => i.sub_category === subCategory);
+  
+  if (items.length === 0) {
+    return await ctx.reply(`No items found for ${subCategory}`, {
+      reply_markup: { remove_keyboard: true }
+    });
+  }
+  
+  const itemsKeyboard = new InlineKeyboard();
+  items.forEach((item: any) =>
+    itemsKeyboard.text(item.item_name, `add_to_order:${item.item_sku}`).row()
+  );
+  
+  await ctx.reply(`${subCategory.charAt(0).toUpperCase() + subCategory.slice(1)} items:`, { 
+    reply_markup: itemsKeyboard 
+  });
+  
+  if (ctx.from) userContext[ctx.from.id] = "items";
+});
+
+// --- Back to Main Menu ---
+bot.hears("🔙 Back to Main", async ctx => {
+  await ctx.reply("⚡ Welcome to KALI Easy Order V2!\nSelect a main category:", {
+    reply_markup: startKeyboard,
+  });
+  await ctx.reply("Main menu:", { reply_markup: { remove_keyboard: true } });
 });
 
 // --- Show Items ---
