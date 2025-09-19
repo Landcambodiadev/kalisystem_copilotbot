@@ -532,24 +532,147 @@ bot.callbackQuery("start_inline_search", async ctx => {
 
 // --- Inline Query ---
 bot.inlineQuery(/.*/, async ctx => {
-  const items = loadJson(ITEM_JSON);
-  const query = ctx.inlineQuery.query.toLowerCase();
-  const filteredItems = query ? items.filter((item: any) => 
-    item.item_name.toLowerCase().includes(query)
-  ) : items;
+  const query = ctx.inlineQuery.query.trim();
+  const queryParts = query.split(' ');
   
+  // Stage 1: Empty query - show main categories
+  if (query === '') {
+    const results = [
+      {
+        type: "article" as const,
+        id: "kitchen",
+        title: "1. KITCHEN",
+        description: "Kitchen items and supplies",
+        input_message_content: { message_text: "1 " },
+      },
+      {
+        type: "article" as const,
+        id: "bar",
+        title: "2. BAR", 
+        description: "Bar items and supplies",
+        input_message_content: { message_text: "2 " },
+      }
+    ];
+    
+    await ctx.answerInlineQuery(results, { 
+      cache_time: 0,
+      switch_pm_text: "Type 1 <space>",
+      switch_pm_parameter: "inline_help"
+    });
+    return;
+  }
+  
+  // Stage 2: User typed "1 " (kitchen) - show kitchen sub-categories
+  if (query === '1 ' || query === '1') {
+    const results = [
+      {
+        type: "article" as const,
+        id: "kitchen_food",
+        title: "1. FOOD",
+        description: "Meat, fish, dairy, vegetables, spices, sauces",
+        input_message_content: { message_text: "1 1 " },
+      },
+      {
+        type: "article" as const,
+        id: "kitchen_households",
+        title: "2. HOUSEHOLDS", 
+        description: "Cleaning, plastics, dry goods",
+        input_message_content: { message_text: "1 2 " },
+      }
+    ];
+    
+    await ctx.answerInlineQuery(results, { 
+      cache_time: 0,
+      switch_pm_text: "Type 1 <space>",
+      switch_pm_parameter: "inline_help"
+    });
+    return;
+  }
+  
+  // Stage 3: User typed "2 " (bar) - show bar sub-categories  
+  if (query === '2 ' || query === '2') {
+    const results = [
+      {
+        type: "article" as const,
+        id: "bar_food",
+        title: "1. FOOD",
+        description: "Fruits, ingredients, desserts",
+        input_message_content: { message_text: "2 1 " },
+      },
+      {
+        type: "article" as const,
+        id: "bar_households", 
+        title: "2. HOUSEHOLDS",
+        description: "Cleaning, cups, office supplies",
+        input_message_content: { message_text: "2 2 " },
+      }
+    ];
+    
+    await ctx.answerInlineQuery(results, { 
+      cache_time: 0,
+      switch_pm_text: "Type 1 <space>",
+      switch_pm_parameter: "inline_help"
+    });
+    return;
+  }
+  
+  // Stage 4: Show filtered items based on selection
+  const items = loadJson(ITEM_JSON);
+  let filteredItems: any[] = [];
+  
+  // Kitchen Food (1 1)
+  if (query.startsWith('1 1')) {
+    const foodSubCategories = ['meat', 'fish/seafood', 'dairy', 'veggies', 'spices', 'sauce'];
+    filteredItems = items.filter((item: any) => 
+      item.category_id < 30000 && foodSubCategories.includes(item.sub_category)
+    );
+  }
+  // Kitchen Households (1 2) 
+  else if (query.startsWith('1 2')) {
+    const householdSubCategories = ['cleaning', 'plastics', 'dry'];
+    filteredItems = items.filter((item: any) => 
+      item.category_id < 30000 && householdSubCategories.includes(item.sub_category)
+    );
+  }
+  // Bar Food (2 1)
+  else if (query.startsWith('2 1')) {
+    const foodSubCategories = ['fruits', 'ingredients'];
+    filteredItems = items.filter((item: any) => 
+      item.category_id >= 30000 && foodSubCategories.includes(item.sub_category)
+    );
+  }
+  // Bar Households (2 2)
+  else if (query.startsWith('2 2')) {
+    const householdSubCategories = ['households'];
+    filteredItems = items.filter((item: any) => 
+      item.category_id >= 30000 && householdSubCategories.includes(item.sub_category)
+    );
+  }
+  // Fallback: search all items by name if query doesn't match pattern
+  else {
+    const searchQuery = query.toLowerCase();
+    filteredItems = items.filter((item: any) => 
+      item.item_name.toLowerCase().includes(searchQuery)
+    );
+  }
+  
+  // Generate item results with "Add to order" buttons
   const results = filteredItems.slice(0, 50).map((item: any) => ({
-    type: "article",
+    type: "article" as const,
     id: item.item_sku,
     title: item.item_name,
-    description: item.category_name || '',
+    description: `${item.category_name || ''} - ${item.sub_category || ''}`,
     input_message_content: { message_text: `🛒 ${item.item_name} - Sent for manager approval` },
     reply_markup: {
       inline_keyboard: [[{ text: "Add to order", callback_data: `add_to_order:${item.item_sku}` }]],
     },
   }));
   
-  await ctx.answerInlineQuery(results, { cache_time: 0 });
+  await ctx.answerInlineQuery(results, { 
+    cache_time: 0,
+    switch_pm_text: "Type 1 <space>",
+    switch_pm_parameter: "inline_help"
+  });
 });
 
 // --- Help Command ---
