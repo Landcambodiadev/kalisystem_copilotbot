@@ -37,7 +37,7 @@ README.md              # This file
    docker build -t kalisystem_bot .
    docker run -d --name kalisystem_bot \
       -e BOT_TOKEN= \
-      -e ADMIN_CHAT_ID= \
+      -e ADMIN_USER_ID= \
 
 1. Install PM2:
    ```sh

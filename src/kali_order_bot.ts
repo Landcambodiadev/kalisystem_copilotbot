@@ -4,7 +4,7 @@ import path from 'path';
 
 // === CONFIG ===
 const BOT_TOKEN = process.env.BOT_TOKEN!;
-const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID!;
+const ADMIN_USER_ID = process.env.ADMIN_USER_ID!;
 const DATA_DIR = "./data";
 const ITEM_CSV = `${DATA_DIR}/items.csv`;
 const ITEM_JSON = `${DATA_DIR}/items.json`;
@@ -17,6 +17,11 @@ const BAR_TOPIC_ID = 14;
 const SUPPLIER_CHAT_ID = "-1002979418678"; // supplier chat/group (replace)
 const MANAGER_TOPIC_ID = 120;        // manager topic/group (replace)
 const ADMIN_TOPIC_ID = 82;          // admin topic/group (replace)
+
+// === ADMIN ACCESS CONTROL ===
+function isAdminPrivateChat(ctx: any): boolean {
+  return ctx.chat?.type === 'private' && String(ctx.from?.id) === ADMIN_USER_ID;
+}
 
 // === DATA LOADING ===
 function loadJson(path: string) {
@@ -250,7 +255,7 @@ bot.callbackQuery("start_inline_search", async ctx => {
 // --- Inline Query ---
 bot.inlineQuery(/.*/, async ctx => {
   const chatType = ctx.inlineQuery.chat_type;
-  if (chatType !== "group" && chatType !== "supergroup" && String(ctx.inlineQuery.from?.id) !== ADMIN_CHAT_ID) {
+  if (chatType !== "group" && chatType !== "supergroup" && String(ctx.inlineQuery.from?.id) !== ADMIN_USER_ID) {
     return await ctx.answerInlineQuery([]);
   }
   const items = loadJson(ITEM_JSON);
@@ -301,7 +306,7 @@ function getFileActionsKeyboard(key: string) {
 }
 
 bot.command('admin_files', async ctx => {
-  if (String(ctx.chat?.id) !== ADMIN_CHAT_ID) return ctx.reply('Access denied. Only allowed in admin chat.');
+  if (!isAdminPrivateChat(ctx)) return ctx.reply('Access denied. Admin commands only work in private chat with the bot.');
   await ctx.reply('Choose a file to manage:', { reply_markup: adminFileMenu });
 });
 
@@ -331,7 +336,7 @@ bot.callbackQuery(/file_import_csv:(\w+)/, async ctx => {
 });
 
 bot.on('message:document', async ctx => {
-  if (String(ctx.chat?.id) !== ADMIN_CHAT_ID) return;
+  if (!isAdminPrivateChat(ctx)) return;
   const fname = ctx.message.document?.file_name;
   const DATA_DIR = './data';
   const files = [
@@ -390,7 +395,7 @@ bot.callbackQuery(/file_edit_template:(\w+)/, async ctx => {
 
 // --- Admin: View Supplier Orders (on Dispatch) ---
 bot.command("admin", async ctx => {
-  if (String(ctx.chat?.id) !== ADMIN_CHAT_ID) return ctx.reply("Access denied. Only allowed in admin chat.");
+  if (!isAdminPrivateChat(ctx)) return ctx.reply("Access denied. Admin commands only work in private chat with the bot.");
   await ctx.reply("Admin Menu:", { reply_markup: adminMenuKeyboard });
 });
 
@@ -425,7 +430,7 @@ bot.callbackQuery("edit_json_suppliers", async ctx => {
 
 // --- CSV/JSON Save Handlers ---
 bot.on('message:text', async ctx => {
-  if (String(ctx.chat?.id) !== ADMIN_CHAT_ID) return;
+  if (!isAdminPrivateChat(ctx)) return;
   // CSV Save
   if (ctx.message.text.startsWith("CSV Items")) {
     const csvData = ctx.message.text.replace(/CSV Items \(edit and send back\):/i, "").trim();
@@ -494,7 +499,7 @@ bot.callbackQuery(/admin_edit_item_json:(.+)/, async ctx => {
 // --- Admin Item JSON Update by Snippet ---
 bot.on('message:text', async ctx => {
   await ctx.reply(`[DEBUG] message:text handler triggered. chat.id=${ctx.chat?.id}`);
-  if (String(ctx.chat?.id) !== ADMIN_CHAT_ID) return;
+  if (!isAdminPrivateChat(ctx)) return;
   // If message is valid item JSON
   if (ctx.message.text.trim().startsWith("{")) {
     try {
@@ -642,6 +647,7 @@ bot.command("help", async ctx => {
 });
 bot.command("admin_help", async ctx => {
   await ctx.reply(`[DEBUG] admin_help handler triggered. chat.id=${ctx.chat?.id}`);
+  if (!isAdminPrivateChat(ctx)) return ctx.reply("Access denied. Admin commands only work in private chat with the bot.");
   await ctx.reply(
     `Admin Flow:
 - Edit items/categories/suppliers via CSV/JSON
