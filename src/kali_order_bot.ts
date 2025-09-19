@@ -4,7 +4,7 @@ import path from 'path';
 
 // === CONFIG ===
 const BOT_TOKEN = process.env.BOT_TOKEN!;
-const ADMIN_CHAT_ID = "-1002979418678";
+const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID!;
 const DATA_DIR = "./data";
 const ITEM_CSV = `${DATA_DIR}/items.csv`;
 const ITEM_JSON = `${DATA_DIR}/items.json`;
