@@ -459,7 +459,7 @@ bot.command("admin", async ctx => {
   
   try {
     console.log("[DEBUG] Attempting to send admin menu...");
-    await ctx.reply("Admin Menu (simplified for testing)"); // Temporarily simplify response
+    await ctx.reply("Admin Menu:", { reply_markup: adminMenuKeyboard });
     console.log("[DEBUG] Admin menu (simplified) sent successfully");
   } catch (error) {
     console.error("[ERROR] Failed to send admin menu:", error);
