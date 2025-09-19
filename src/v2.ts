@@ -211,7 +211,9 @@ bot.callbackQuery(/approve_item:(.+):(.+)/, async ctx => {
   await bot.api.sendMessage(GROUP_CHAT_ID, `🛒 ${item.category_name || ''} ${item.item_name}`, { 
     message_thread_id: topicId 
   });
+  console.log(`[DEBUG] Approved item posted to Topic (ID: ${topicId}) for item: ${item.item_name}`);
   
+  console.log(`[DEBUG] Message posted to Manager Topic (ID: ${MANAGER_TOPIC_ID}) for item: ${item.item_name}`);
   // Edit manager message to show approval
   await ctx.editMessageText(
     `✅ APPROVED: ${item.category_name || ''} ${item.item_name}\nRequested by: ${approval.requestedBy}`,
@@ -238,6 +240,7 @@ bot.callbackQuery(/approve_item:(.+):(.+)/, async ctx => {
       reply_markup: dispatchKeyboard
     }
   );
+  );
   
   // Store for dispatcher tracking
   pendingDispatch[dispatchMessage.message_id] = {
@@ -246,6 +249,7 @@ bot.callbackQuery(/approve_item:(.+):(.+)/, async ctx => {
     originalApprovalId: messageId,
     dateStamp: dateStamp
   };
+  console.log(`[DEBUG] Dispatcher review message posted to Dispatcher Topic (ID: ${DISPATCHER_TOPIC_ID}) for item: ${item.item_name}`);
   
   // Clean up approval tracking
   delete pendingApprovals[messageId];
@@ -308,6 +312,7 @@ bot.callbackQuery(/dispatch_approve:(.+):(.+)/, async ctx => {
       is_anonymous: false
     }
   );
+  );
   
   // Store poll for completion tracking
   pendingPolls[pollMessage.poll?.id || ''] = {
@@ -316,6 +321,7 @@ bot.callbackQuery(/dispatch_approve:(.+):(.+)/, async ctx => {
     dateStamp: dispatch.dateStamp,
     messageId: pollMessage.message_id
   };
+  console.log(`[DEBUG] Poll posted to Processing Topic (ID: ${PROCESSING_TOPIC_ID}) for item: ${item.item_name}`);
   
   // Clean up dispatch tracking
   delete pendingDispatch[messageId];
@@ -372,6 +378,7 @@ bot.on('poll_answer', async (ctx) => {
         reply_markup: completedKeyboard
       }
     );
+    );
     
     // Clean up poll tracking
     delete pendingPolls[pollId];
@@ -419,6 +426,7 @@ bot.on(['message:text', 'message:photo', 'message:voice'], async (ctx, next) => 
     await bot.api.forwardMessage(GROUP_CHAT_ID, ctx.chat.id, ctx.message.message_id, {
       message_thread_id: MANAGER_TOPIC_ID
     });
+    console.log(`[DEBUG] Custom item request forwarded to Manager Topic (ID: ${MANAGER_TOPIC_ID})`);
     
     await bot.api.sendMessage(GROUP_CHAT_ID, 
       `📋 Custom Item Approval Required from ${ctx.from?.username || ctx.from?.first_name || 'Unknown'}`,
@@ -426,6 +434,7 @@ bot.on(['message:text', 'message:photo', 'message:voice'], async (ctx, next) => 
         message_thread_id: MANAGER_TOPIC_ID,
         reply_markup: approvalKeyboard
       }
+    );
     );
     
     await ctx.reply("✅ Custom request sent to managers for approval.");
