@@ -737,5 +737,9 @@ bot.start().then(() => {
   console.log('[DEBUG] Bot started successfully!');
 }).catch((error) => {
   console.error('[ERROR] Failed to start bot:', error);
+  if (error.message.includes('404: Not Found')) {
+    console.error('[ERROR] Invalid BOT_TOKEN! Please check your .env file and ensure the token is correct.');
+    console.error('[ERROR] Get a new token from @BotFather on Telegram if needed.');
+  }
   process.exit(1);
 });
