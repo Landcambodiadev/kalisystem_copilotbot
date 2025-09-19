@@ -715,4 +715,6 @@ bot.start().then(() => {
     console.error('[ERROR] Get a new token from @BotFather on Telegram if needed.');
   }
   process.exit(1);
+}).finally(() => {
+  console.log('[DEBUG] Bot start() promise completed (either resolved or rejected)');
 });
