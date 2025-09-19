@@ -10,6 +10,7 @@ const ADMIN_USER_ID = process.env.ADMIN_USER_ID!;
 console.log('[DEBUG] Bot starting with config:');
 console.log('[DEBUG] BOT_TOKEN loaded:', BOT_TOKEN ? 'YES' : 'NO');
 console.log('[DEBUG] ADMIN_USER_ID loaded:', ADMIN_USER_ID ? `YES (${ADMIN_USER_ID})` : 'NO');
+console.log('[DEBUG] ADMIN_USER_ID used for comparison:', ADMIN_USER_ID);
 
 if (!BOT_TOKEN) {
   console.error('[ERROR] BOT_TOKEN is missing from environment variables');
@@ -453,11 +454,13 @@ bot.command("admin", async ctx => {
   console.log("[DEBUG] Admin access granted, showing menu");
   
   try {
-    await ctx.reply("Admin Menu:", { reply_markup: adminMenuKeyboard });
-    console.log("[DEBUG] Admin menu sent successfully");
+    console.log("[DEBUG] Attempting to send admin menu...");
+    await ctx.reply("Admin Menu (simplified for testing)"); // Temporarily simplify response
+    console.log("[DEBUG] Admin menu (simplified) sent successfully");
   } catch (error) {
     console.error("[ERROR] Failed to send admin menu:", error);
   }
+  console.log("[DEBUG] ctx.reply attempt finished.");
 });
 
 // --- Edit Files Menu ---
