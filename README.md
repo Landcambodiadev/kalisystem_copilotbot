@@ -5,7 +5,7 @@ Telegram order bot for easy kitchen/bar/manager/supplier order management.
 ## Structure
 
 ```
-src/orderbot.ts        # Main bot code
+src/kali_order_bot.ts  # Main bot code
 data/                  # All static data files (items, categories, suppliers, templates)
 .env.example           # Environment configuration example
 Dockerfile             # For Docker deployment
@@ -27,7 +27,7 @@ README.md              # This file
 
 3. **Run locally:**
    ```sh
-   npx ts-node src/orderbot.ts
+   npx ts-node src/kali_order_bot.ts
    ```
 
 ## Docker Deployment
