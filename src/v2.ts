@@ -500,7 +500,7 @@ bot.inlineQuery(/.*/, async ctx => {
     id: item.item_sku,
     title: item.item_name,
     description: item.category_name || '',
-    input_message_content: { message_text: `🛒 ${item.item_name}` },
+    input_message_content: { message_text: `🛒 ${item.item_name} - Sent for manager approval` },
     reply_markup: {
       inline_keyboard: [[{ text: "Add to order", callback_data: `add_to_order:${item.item_sku}` }]],
     },
