@@ -249,11 +249,15 @@ bot.hears(/Bar Order \(\d+\)/, async ctx => {
 bot.hears("Custom", async ctx => {
   await ctx.reply("Send your custom item request (photo, voice, or text). This will be sent to admins for approval.", { reply_markup: { remove_keyboard: true } });
 });
-bot.on(['message:text', 'message:photo', 'message:voice'], async ctx => {
+bot.on(['message:text', 'message:photo', 'message:voice'], async (ctx, next) => {
   if (ctx.message.reply_to_message && ctx.message.reply_to_message.text && ctx.message.reply_to_message.text.includes("custom item request")) {
     await bot.api.forwardMessage(ADMIN_TOPIC_ID, ctx.chat.id, ctx.message.message_id);
     await ctx.reply("✅ Custom request sent to admins.");
+    return;
   }
+  
+  // If not a custom item request, pass to next handler
+  await next();
 });
 
 // --- Navigation ---
@@ -493,49 +497,11 @@ bot.callbackQuery("edit_json_suppliers", async ctx => {
 });
 
 // --- CSV/JSON Save Handlers ---
-bot.on('message:text', async ctx => {
-  if (!isAdminPrivateChat(ctx)) return;
-  // CSV Save
-  if (ctx.message.text.startsWith("CSV Items")) {
-    const csvData = ctx.message.text.replace(/CSV Items \(edit and send back\):/i, "").trim();
-    backupFile(ITEM_CSV);
-    fs.writeFileSync(ITEM_CSV, csvData);
-    // Optionally convert to JSON
-    const items = importCSVtoItems(ITEM_CSV);
-    backupFile(ITEM_JSON);
-    saveJson(ITEM_JSON, items);
-    await ctx.reply("CSV updated and converted to JSON!");
-  }
-  // JSON Save
-  if (ctx.message.text.trim().startsWith("{") || ctx.message.text.trim().startsWith("[")) {
-    try {
-      const json = JSON.parse(ctx.message.text.trim());
-      // Infer type by keys: items/categories/suppliers
-      if (Array.isArray(json) && json[0]?.item_sku) {
-        backupFile(ITEM_JSON);
-        saveJson(ITEM_JSON, json);
-        await ctx.reply("Items JSON updated!");
-      } else if (Array.isArray(json) && json[0]?.category_id) {
-        backupFile(CATEGORY_JSON);
-        saveJson(CATEGORY_JSON, json);
-        await ctx.reply("Categories JSON updated!");
-      } else if (Array.isArray(json) && json[0]?.supplier) {
-        backupFile(SUPPLIER_JSON);
-        saveJson(SUPPLIER_JSON, json);
-        await ctx.reply("Suppliers JSON updated!");
-      } else {
-        await ctx.reply("Unknown JSON structure.");
-      }
-    } catch (error) {
-      await ctx.reply("Invalid JSON format.");
-    }
-  }
-});
 
 // --- Consolidated Text Message Handler ---
-bot.on('message:text', async ctx => {
+bot.on('message:text', async (ctx, next) => {
   console.log(`[DEBUG] message:text handler triggered by user ${ctx.from?.id} in chat ${ctx.chat?.id}`);
-  if (!isAdminPrivateChat(ctx)) return;
+  if (!isAdminPrivateChat(ctx)) return next();
   
   const text = ctx.message.text.trim();
   
@@ -599,7 +565,11 @@ bot.on('message:text', async ctx => {
     } catch (error) {
       await ctx.reply("Invalid JSON format.");
     }
+    return;
   }
+  
+  // If no conditions matched, pass to next handler
+  await next();
 });
 
 // --- Supplier Order Admin Actions ---
