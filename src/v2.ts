@@ -171,20 +171,15 @@ bot.callbackQuery(/add_to_order:(.+)/, async ctx => {
     topicId = BAR_TOPIC_ID;
   }
   
-  await ctx.answerCallbackQuery("✅ Added to order - Sent for manager approval");
+  await ctx.answerCallbackQuery("✅ Sent for manager approval");
   
-  // V2 Flow: Send to topic first, then forward to manager for approval
-  const topicMessage = await bot.api.sendMessage(GROUP_CHAT_ID, `🛒 ${item.category_name || ''} ${item.item_name}`, { 
-    message_thread_id: topicId 
-  });
-  
-  // Forward to Manager Topic for approval
+  // V2 Flow: Send directly to Manager Topic for approval
   const approvalKeyboard = new InlineKeyboard()
-    .text("✅ Approve", `approve_item:${itemId}:${topicMessage.message_id}`)
-    .text("❌ Reject", `reject_item:${itemId}:${topicMessage.message_id}`);
+    .text("✅ Approve", `approve_item:${itemId}:${topicId}`)
+    .text("❌ Reject", `reject_item:${itemId}:${topicId}`);
   
   const managerMessage = await bot.api.sendMessage(GROUP_CHAT_ID, 
-    `📋 Manager Approval Required:\n${item.item_name} (${item.item_sku})\nRequested by: ${ctx.from?.username || ctx.from?.first_name || 'Unknown'}`, 
+    `📋 Manager Approval Required:\n${item.category_name || ''} ${item.item_name}\nRequested by: ${ctx.from?.username || ctx.from?.first_name || 'Unknown'}`, 
     { 
       message_thread_id: MANAGER_TOPIC_ID,
       reply_markup: approvalKeyboard
@@ -194,7 +189,6 @@ bot.callbackQuery(/add_to_order:(.+)/, async ctx => {
   // Store for tracking
   pendingApprovals[managerMessage.message_id] = {
     item: item,
-    topicMessageId: topicMessage.message_id,
     topicId: topicId,
     requestedBy: ctx.from?.username || ctx.from?.first_name || 'Unknown'
   };
@@ -203,7 +197,7 @@ bot.callbackQuery(/add_to_order:(.+)/, async ctx => {
 // --- Manager Approval ---
 bot.callbackQuery(/approve_item:(.+):(.+)/, async ctx => {
   const itemId = ctx.match![1];
-  const topicMessageId = ctx.match![2];
+  const topicId = Number(ctx.match![2]);
   const messageId = ctx.callbackQuery.message?.message_id;
   
   if (!messageId || !pendingApprovals[messageId]) {
@@ -213,9 +207,14 @@ bot.callbackQuery(/approve_item:(.+):(.+)/, async ctx => {
   const approval = pendingApprovals[messageId];
   const item = approval.item;
   
+  // Post approved item to the appropriate topic
+  await bot.api.sendMessage(GROUP_CHAT_ID, `🛒 ${item.category_name || ''} ${item.item_name}`, { 
+    message_thread_id: topicId 
+  });
+  
   // Edit manager message to show approval
   await ctx.editMessageText(
-    `✅ APPROVED: ${item.item_name} (${item.item_sku})\nRequested by: ${approval.requestedBy}`,
+    `✅ APPROVED: ${item.category_name || ''} ${item.item_name}\nRequested by: ${approval.requestedBy}`,
     { reply_markup: undefined }
   );
   
@@ -257,7 +256,7 @@ bot.callbackQuery(/approve_item:(.+):(.+)/, async ctx => {
 // --- Manager Rejection ---
 bot.callbackQuery(/reject_item:(.+):(.+)/, async ctx => {
   const itemId = ctx.match![1];
-  const topicMessageId = ctx.match![2];
+  const topicId = Number(ctx.match![2]);
   const messageId = ctx.callbackQuery.message?.message_id;
   
   if (!messageId || !pendingApprovals[messageId]) {
@@ -269,7 +268,7 @@ bot.callbackQuery(/reject_item:(.+):(.+)/, async ctx => {
   
   // Edit manager message to show rejection
   await ctx.editMessageText(
-    `❌ REJECTED: ${item.item_name} (${item.item_sku})\nRequested by: ${approval.requestedBy}`,
+    `❌ REJECTED: ${item.category_name || ''} ${item.item_name}\nRequested by: ${approval.requestedBy}`,
     { reply_markup: undefined }
   );
   
