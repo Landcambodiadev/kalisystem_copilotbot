@@ -458,6 +458,18 @@ bot.on('message:text', async ctx => {
         saveJson(CATEGORY_JSON, json);
         await ctx.reply("Categories JSON updated!");
       } else if (Array.isArray(json) && json[0]?.supplier) {
+        backupFile(SUPPLIER_JSON);
+        saveJson(SUPPLIER_JSON, json);
+        await ctx.reply("Suppliers JSON updated!");
+      } else {
+        await ctx.reply("Unknown JSON structure.");
+      }
+    } catch (error) {
+      await ctx.reply("Invalid JSON format.");
+    }
+  }
+});
+
 // --- Consolidated Text Message Handler ---
 bot.on('message:text', async ctx => {
   console.log(`[DEBUG] message:text handler triggered by user ${ctx.from?.id} in chat ${ctx.chat?.id}`);
