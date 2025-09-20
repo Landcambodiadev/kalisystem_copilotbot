@@ -1079,9 +1079,9 @@ if (isProduction) {
       console.log('[DEBUG] Webhook set successfully');
     } catch (error) {
       console.error('[ERROR] Failed to set webhook:', error);
-      if (error.message.includes('404: Not Found')) {
-        console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
-      }
+      // if (error.message.includes('404: Not Found')) {
+      //   console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
+      // }
       process.exit(1);
     }
   });
