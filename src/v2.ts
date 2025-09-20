@@ -371,16 +371,16 @@ bot.hears("🔙 Back to Main", async ctx => {
   const userId = ctx.from?.id;
   if (!userId) return;
   
-  if (userMarkMode[userId]) {
-    userMarkContext[userId] = "main";
-    await ctx.reply("🔹 Mark Mode - Select category:", {
-      reply_markup: buildMarkModeKeyboard(userId),
-    });
-  } else {
-    await ctx.reply("⚡ Welcome to KALI Easy Order V2!\nSelect a main category:", {
-      reply_markup: startReplyKeyboard,
-    });
-  }
+  // Reset user context and mark mode
+  userMarkMode[userId] = false;
+  markedItems[userId] = {};
+  userMarkContext[userId] = "";
+  userContext[userId] = "";
+  
+  // Same as /start command
+  await ctx.reply("⚡ Welcome to KALI Easy Order V2!\nSelect a main category:", {
+    reply_markup: startReplyKeyboard,
+  });
 });
 
 // === MARK MODE HANDLERS ===
