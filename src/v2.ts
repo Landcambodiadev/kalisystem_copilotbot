@@ -134,17 +134,17 @@ bot.command("start", async ctx => {
   console.log('[DEBUG] Chat info:', ctx.chat);
   
   try {
-    await ctx.reply("⚡ Welcome to KALI Easy Order V2!\nSelect a main category:");
+    await ctx.reply("⚡ Welcome to KALI Easy Order V2!\nSelect a main category:", {
+      reply_markup: startReplyKeyboard,
+    });
     console.log('[DEBUG] /start command response sent successfully');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[ERROR] Failed to send /start response:', error);
     console.error('[ERROR] Error details:', JSON.stringify(error, null, 2));
-    console.error('[ERROR] Error stack:', error.stack);
+    if (error instanceof Error) {
+      console.error('[ERROR] Error stack:', error.stack);
+    }
   }
-  
-    reply_markup: startReplyKeyboard,
-  });
-  console.log('[DEBUG] /start command response sent');
 });
 
 // --- Handle Reply Keyboard Buttons ---
