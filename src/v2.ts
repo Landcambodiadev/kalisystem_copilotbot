@@ -404,23 +404,22 @@ bot.callbackQuery(/mark_item:(.+)/, async ctx => {
   // Mark the item
   markedItems[userId][itemId] = item;
   
-  // Update the button text to show it's marked
-  const keyboard = ctx.callbackQuery.message?.reply_markup;
-  if (keyboard) {
-    const newKeyboard = InlineKeyboard.from(keyboard.inline_keyboard.map(row =>
-      row.map(button => {
-        if ('callback_data' in button && button.callback_data === `mark_item:${itemId}`) {
-          return { text: `🔹 ${item.item_name}`, callback_data: `unmark_item:${itemId}` };
-        }
-        return button;
-      })
-    ));
-    
-    try {
-      await ctx.editMessageReplyMarkup({ reply_markup: newKeyboard });
-    } catch (error) {
-      // Ignore edit errors
-    }
+  // Rebuild the entire keyboard with updated mark status
+  const subCategory = item.sub_category;
+  const allItems = loadJson(ITEM_JSON).filter((i: any) => i.sub_category === subCategory);
+  const itemsKeyboard = new InlineKeyboard();
+  
+  allItems.forEach((currentItem: any) => {
+    const isMarked = markedItems[userId] && markedItems[userId][currentItem.item_sku];
+    const displayName = isMarked ? `🔹 ${currentItem.item_name}` : currentItem.item_name;
+    const action = isMarked ? `unmark_item:${currentItem.item_sku}` : `mark_item:${currentItem.item_sku}`;
+    itemsKeyboard.text(displayName, action).row();
+  });
+  
+  try {
+    await ctx.editMessageReplyMarkup({ reply_markup: itemsKeyboard });
+  } catch (error) {
+    console.log('[DEBUG] Could not update keyboard:', error);
   }
   
   await ctx.answerCallbackQuery(`🔹 Marked: ${item.item_name}`);
@@ -442,23 +441,22 @@ bot.callbackQuery(/unmark_item:(.+)/, async ctx => {
     delete markedItems[userId][itemId];
   }
   
-  // Update the button text to show it's unmarked
-  const keyboard = ctx.callbackQuery.message?.reply_markup;
-  if (keyboard) {
-    const newKeyboard = InlineKeyboard.from(keyboard.inline_keyboard.map(row =>
-      row.map(button => {
-        if ('callback_data' in button && button.callback_data === `unmark_item:${itemId}`) {
-          return { text: item.item_name, callback_data: `mark_item:${itemId}` };
-        }
-        return button;
-      })
-    ));
-    
-    try {
-      await ctx.editMessageReplyMarkup({ reply_markup: newKeyboard });
-    } catch (error) {
-      // Ignore edit errors
-    }
+  // Rebuild the entire keyboard with updated mark status
+  const subCategory = item.sub_category;
+  const allItems = loadJson(ITEM_JSON).filter((i: any) => i.sub_category === subCategory);
+  const itemsKeyboard = new InlineKeyboard();
+  
+  allItems.forEach((currentItem: any) => {
+    const isMarked = markedItems[userId] && markedItems[userId][currentItem.item_sku];
+    const displayName = isMarked ? `🔹 ${currentItem.item_name}` : currentItem.item_name;
+    const action = isMarked ? `unmark_item:${currentItem.item_sku}` : `mark_item:${currentItem.item_sku}`;
+    itemsKeyboard.text(displayName, action).row();
+  });
+  
+  try {
+    await ctx.editMessageReplyMarkup({ reply_markup: itemsKeyboard });
+  } catch (error) {
+    console.log('[DEBUG] Could not update keyboard:', error);
   }
   
   await ctx.answerCallbackQuery(`Unmarked: ${item.item_name}`);
