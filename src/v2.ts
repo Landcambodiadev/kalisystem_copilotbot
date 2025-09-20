@@ -132,7 +132,16 @@ bot.command("start", async ctx => {
   console.log('[DEBUG] /start command handler triggered');
   console.log('[DEBUG] User info:', ctx.from);
   console.log('[DEBUG] Chat info:', ctx.chat);
-  await ctx.reply("⚡ Welcome to KALI Easy Order V2!\nSelect a main category:", {
+  
+  try {
+    await ctx.reply("⚡ Welcome to KALI Easy Order V2!\nSelect a main category:");
+    console.log('[DEBUG] /start command response sent successfully');
+  } catch (error) {
+    console.error('[ERROR] Failed to send /start response:', error);
+    console.error('[ERROR] Error details:', JSON.stringify(error, null, 2));
+    console.error('[ERROR] Error stack:', error.stack);
+  }
+  
     reply_markup: startReplyKeyboard,
   });
   console.log('[DEBUG] /start command response sent');
