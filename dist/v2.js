@@ -509,23 +509,24 @@ bot.callbackQuery(/approve_item:(.+):(.+)/, async (ctx) => {
         message_thread_id: approval.topicId
     });
     console.log(`[DEBUG] Approved item with quantity posted to Topic (ID: ${approval.topicId}) for item: ${item.item_name} x${quantity}`);
-    // Get supplier info
-    const suppliers = loadJson(SUPPLIER_JSON);
-    const supplier = suppliers.find((s) => s.supplier.toLowerCase() === item.default_supplier?.toLowerCase()) ||
-        { supplier: item.default_supplier || 'Unknown Supplier' };
-    // Send directly to Dispatcher Topic with quantity
+    // Forward the approved message to Dispatcher Topic with new buttons
     const dispatchKeyboard = new grammy_1.InlineKeyboard()
         .text("✅ Approve", `dispatch_approve:${item.item_sku}:${messageId}`)
         .text("❌ Reject", `dispatch_reject:${item.item_sku}:${messageId}`);
-    const now = new Date();
-    const dateStamp = `${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1).toString().padStart(2, '0')}.${now.getFullYear().toString().slice(-2)} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     console.log(`[DEBUG] Sending to Dispatcher Topic (ID: ${DISPATCHER_TOPIC_ID}) for item: ${item.item_name} x${quantity}`);
     console.log(`[DEBUG] Posting to GROUP_CHAT_ID: ${GROUP_CHAT_ID}, DISPATCHER_TOPIC_ID: ${DISPATCHER_TOPIC_ID}`);
-    const dispatchMessage = await bot.api.sendMessage(GROUP_CHAT_ID, `📦 Dispatcher Review:\n\n<<${supplier.supplier}>>\n${item.item_name} ${quantity} ${item.measure_unit}\n•\n\n${dateStamp}`, {
+    // Forward the manager's approved message to dispatcher topic with new buttons
+    const dispatchMessage = await bot.api.copyMessage(GROUP_CHAT_ID, GROUP_CHAT_ID, messageId, {
         message_thread_id: DISPATCHER_TOPIC_ID,
         reply_markup: dispatchKeyboard
     });
     console.log(`[DEBUG] Dispatcher message sent with message_id: ${dispatchMessage.message_id}`);
+    // Get supplier info for tracking
+    const suppliers = loadJson(SUPPLIER_JSON);
+    const supplier = suppliers.find((s) => s.supplier.toLowerCase() === item.default_supplier?.toLowerCase()) ||
+        { supplier: item.default_supplier || 'Unknown Supplier' };
+    const now = new Date();
+    const dateStamp = `${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1).toString().padStart(2, '0')}.${now.getFullYear().toString().slice(-2)} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     // Store for dispatcher tracking
     pendingDispatch[dispatchMessage.message_id] = {
         item: item,
