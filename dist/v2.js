@@ -861,7 +861,7 @@ if (isProduction) {
     bot.api.setWebhook(WEBHOOK_URL).then(() => {
         console.log('[DEBUG] Webhook set successfully');
         // Create HTTP server for webhooks
-        const server = (0, http_1.createServer)((0, grammy_2.webhookCallback)(bot, 'node'));
+        const server = (0, http_1.createServer)((0, grammy_2.webhookCallback)(bot, 'node:http'));
         server.listen(parseInt(PORT), () => {
             console.log('[DEBUG] V2 Bot webhook server started successfully on port', PORT);
         });
