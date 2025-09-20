@@ -1084,37 +1084,53 @@ if (isProduction) {
       await bot.handleUpdate(req.body);
       console.log('[DEBUG] bot.handleUpdate completed successfully');
       res.status(200).send('OK');
+    } catch (error) {
+      console.error('[ERROR] Error handling webhook update:', error);
+      res.status(500).send('Error');
     }
+  });
+  
+  // Health check endpoint
+  app.get('/', (req, res) => {
     console.log('[DEBUG] Health check endpoint hit');
     res.send('KALI Order Bot V2 is running!');
     console.log('[DEBUG] Health check response sent');
   });
   
   // Start server
+  const port = PORT || 3000;
+  app.listen(port, () => {
     console.log('[DEBUG] V2 Bot webhook server started successfully on port', port);
     
     let retries = 3;
+    let webhookSet = false;
     
-        await bot.api.setWebhook(`${WEBHOOK_URL}/webhook`, {
-          max_connections: 40,
-          allowed_updates: ['message', 'callback_query', 'inline_query', 'poll_answer']
-        });
-        webhookSet = true;
-        console.log('[DEBUG] Webhook set successfully');
-        retries--;
-        if (retries > 0) {
-          console.log('[DEBUG] Waiting 2 seconds before retry...');
-          throw retryError;
+    const setWebhookWithRetry = async () => {
+      while (retries > 0 && !webhookSet) {
+        try {
+          await bot.api.setWebhook(`${WEBHOOK_URL}/webhook`, {
+            max_connections: 40,
+            allowed_updates: ['message', 'callback_query', 'inline_query', 'poll_answer']
+          });
+          webhookSet = true;
+          console.log('[DEBUG] Webhook set successfully');
+        } catch (retryError) {
+          console.error('[ERROR] Failed to set webhook, retries left:', retries - 1);
+          console.error('[ERROR] Error:', retryError);
+          retries--;
+          if (retries > 0) {
+            console.log('[DEBUG] Waiting 2 seconds before retry...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          } else {
+            throw retryError;
+          }
         }
-    }
-    }
+      }
+    };
     
     if (WEBHOOK_URL) {
       console.log('[DEBUG] Setting webhook to:', `${WEBHOOK_URL}/webhook`);
-      try {
-        await bot.api.setWebhook(`${WEBHOOK_URL}/webhook`);
-        console.log('[DEBUG] Webhook set successfully');
-      } catch (error) {
+      setWebhookWithRetry().catch((error) => {
         console.error('[ERROR] Failed to set webhook after retries:', error);
         console.error('[ERROR] This might be due to:');
         console.error('[ERROR] 1. Invalid BOT_TOKEN - check your .env file');
@@ -1122,13 +1138,14 @@ if (isProduction) {
         console.error('[ERROR] Bot will continue running but webhooks may not work properly');
         
         if ((error as Error).message.includes('404') || (error as Error).message.includes('Unauthorized')) {
+          console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
         }
         console.error('[ERROR] Webhook setup error stack:', (error as Error).stack);
         if ((error as Error).message.includes('404: Not Found')) {
           console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
         }
         process.exit(1);
-      }
+      });
     } else {
       console.log('[DEBUG] No WEBHOOK_URL provided, webhook not set');
     }
