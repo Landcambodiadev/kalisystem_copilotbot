@@ -197,8 +197,8 @@ bot.hears(["Kitchen", "Bar"], async ctx => {
 
 // --- Handle @ Button (Inline Mode) ---
 bot.hears("@", async ctx => {
-  await ctx.reply("Type @kalisystembot <item> in any chat to search instantly, or tap below to start inline search.", {
-    reply_markup: new InlineKeyboard().switchInlineCurrent("").row()
+  await ctx.reply("🔍 Inline Search Mode", {
+    reply_markup: new InlineKeyboard().switchInlineCurrent("")
   });
 });
 
