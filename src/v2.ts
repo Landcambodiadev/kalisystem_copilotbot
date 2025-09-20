@@ -1055,7 +1055,7 @@ if (isProduction) {
     console.log('[DEBUG] Webhook set successfully');
     
     // Create HTTP server for webhooks
-    const server = createServer(webhookCallback(bot, 'node'));
+    const server = createServer(webhookCallback(bot, 'node:http'));
     
     server.listen(parseInt(PORT), () => {
       console.log('[DEBUG] V2 Bot webhook server started successfully on port', PORT);
