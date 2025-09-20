@@ -228,6 +228,28 @@ bot.hears("Place Order", async ctx => {
     return await ctx.reply("No items marked for ordering.");
   }
   
+  // Prompt user to choose destination
+  const destinationKeyboard = new InlineKeyboard()
+    .text("📋 Manager", `send_order:manager:${userId}`)
+    .text("📦 Dispatcher", `send_order:dispatcher:${userId}`);
+  
+  await ctx.reply("Send order to:", {
+    reply_markup: destinationKeyboard
+  });
+});
+
+// --- Handle Send Order Destination ---
+bot.callbackQuery(/send_order:(manager|dispatcher):(.+)/, async ctx => {
+  const destination = ctx.match![1];
+  const userId = parseInt(ctx.match![2]);
+  
+  const marked = markedItems[userId] || {};
+  const markedItemsList = Object.values(marked);
+  
+  if (markedItemsList.length === 0) {
+    return await ctx.answerCallbackQuery("No items marked for ordering.");
+  }
+  
   // Group items by supplier
   const supplierGroups: Record<string, any[]> = {};
   markedItemsList.forEach((item: any) => {
@@ -239,31 +261,36 @@ bot.hears("Place Order", async ctx => {
   });
   
   // Build order summary message
-  let orderSummary = "📋 **Marked Items Order Summary:**\n\n";
+  let orderSummary = `📋 **Bulk Order Summary** (${destination.toUpperCase()}):\n\n`;
   
   Object.entries(supplierGroups).forEach(([supplier, items]) => {
-    orderSummary += `**${supplier}:**\n`;
+    orderSummary += `**<<${supplier}>>**\n`;
     items.forEach((item: any) => {
       const defaultQty = item.default_quantity || '1';
-      orderSummary += `• ${item.item_name} x${defaultQty} (${item.measure_unit || 'pc'})\n`;
+      orderSummary += `${item.item_name} ${defaultQty} ${item.measure_unit || 'pc'}\n`;
     });
-    orderSummary += '\n';
+    orderSummary += '•\n\n';
   });
   
-  orderSummary += "Edit quantities if needed and send back to bot.\n";
-  orderSummary += "Or reply with:\n";
-  orderSummary += "• 'MANAGER' - Send to manager\n";
-  orderSummary += "• 'DISPATCHER' - Send to dispatcher";
+  const now = new Date();
+  const dateStamp = `${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1).toString().padStart(2, '0')}.${now.getFullYear().toString().slice(-2)} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  orderSummary += dateStamp;
   
-  // Disable mark mode
+  // Send to appropriate topic
+  const topicId = destination === 'manager' ? MANAGER_TOPIC_ID : DISPATCHER_TOPIC_ID;
+  
+  await bot.api.sendMessage(GROUP_CHAT_ID, orderSummary, {
+    message_thread_id: topicId,
+    parse_mode: 'Markdown'
+  });
+  
+  // Disable mark mode and clear marked items
   userMarkMode[userId] = false;
   markedItems[userId] = {};
   userMarkContext[userId] = "";
   
-  await ctx.reply(orderSummary, {
-    reply_markup: startReplyKeyboard,
-    parse_mode: 'Markdown'
-  });
+  await ctx.editMessageText(`✅ Bulk order sent to ${destination.toUpperCase()}!`);
+  await ctx.answerCallbackQuery(`Order sent to ${destination}`);
 });
 
 // --- Handle Stop Mark Mode Button ---
@@ -497,52 +524,84 @@ bot.callbackQuery(/add_to_order:(.+)/, async ctx => {
   
   await ctx.answerCallbackQuery("✅ Sent for manager approval");
   
-  // V2 Flow: Send quantity poll to Manager Topic
-  console.log(`[DEBUG] Sending quantity poll to Manager Topic (ID: ${MANAGER_TOPIC_ID}) for item: ${item.item_name}`);
-  const pollMessage = await bot.api.sendPoll(
+  // V2 Flow: Send item message with inline buttons to Manager Topic
+  console.log(`[DEBUG] Sending item approval to Manager Topic (ID: ${MANAGER_TOPIC_ID}) for item: ${item.item_name}`);
+  
+  const defaultQty = item.default_quantity || '1';
+  const approvalKeyboard = new InlineKeyboard()
+    .text("+1", `qty_add:${item.item_sku}:${defaultQty}`)
+    .text("✅", `approve_item:${item.item_sku}:${defaultQty}`)
+    .text("❌", `cancel_item:${item.item_sku}`);
+  
+  const approvalMessage = await bot.api.sendMessage(
     GROUP_CHAT_ID,
-    `${item.item_name} - How many ${item.measure_unit}?`,
-    ['1', '2', '3', '4', '5', '6'],
+    `${item.item_name} ${defaultQty}`,
     {
       message_thread_id: MANAGER_TOPIC_ID,
-      is_anonymous: true,
-      allows_multiple_answers: false
+      reply_markup: approvalKeyboard
     }
   );
   
   // Store for quantity tracking
-  pendingApprovals[pollMessage.poll?.id || ''] = {
+  pendingApprovals[approvalMessage.message_id] = {
     item: item,
     topicId: topicId,
+    quantity: defaultQty,
     requestedBy: ctx.from?.username || ctx.from?.first_name || 'Unknown',
-    pollMessageId: pollMessage.message_id
+    messageId: approvalMessage.message_id
   };
-  console.log(`[DEBUG] Quantity poll created with ID: ${pollMessage.poll?.id} for item: ${item.item_name}`);
+  console.log(`[DEBUG] Item approval message created with ID: ${approvalMessage.message_id} for item: ${item.item_name}`);
 });
 
-// --- Manager Quantity Poll Answer Handler ---
-bot.on('poll_answer', async (ctx) => {
-  const pollId = ctx.pollAnswer.poll_id;
-  const userId = ctx.pollAnswer.user?.id;
-  const selectedOption = ctx.pollAnswer.option_ids[0]; // Get first selected option (0-5 for options 1-6)
+// --- Manager Quantity Add Button ---
+bot.callbackQuery(/qty_add:(.+):(.+)/, async ctx => {
+  const itemId = ctx.match![1];
+  const currentQty = parseInt(ctx.match![2]);
+  const messageId = ctx.callbackQuery.message?.message_id;
   
-  if (!pendingApprovals[pollId]) {
-    return; // Poll not tracked for approval
+  if (!messageId || !pendingApprovals[messageId]) {
+    return await ctx.answerCallbackQuery("Approval record not found");
   }
   
-  const approval = pendingApprovals[pollId];
+  const approval = pendingApprovals[messageId];
   const item = approval.item;
-  const quantity = selectedOption + 1; // Convert 0-5 to 1-6
+  const newQty = currentQty + 1;
   
-  console.log(`[DEBUG] Manager selected quantity ${quantity} for item: ${item.item_name}`);
+  // Update the message with new quantity
+  const updatedKeyboard = new InlineKeyboard()
+    .text("+1", `qty_add:${item.item_sku}:${newQty}`)
+    .text("✅", `approve_item:${item.item_sku}:${newQty}`)
+    .text("❌", `cancel_item:${item.item_sku}`);
   
-  // Close the poll
-  try {
-    await bot.api.stopPoll(GROUP_CHAT_ID, approval.pollMessageId);
-    console.log(`[DEBUG] Poll closed for item: ${item.item_name}`);
-  } catch (error) {
-    console.error(`[ERROR] Failed to close poll for item ${item.item_name}:`, error);
+  await ctx.editMessageText(`${item.item_name} ${newQty}`, {
+    reply_markup: updatedKeyboard
+  });
+  
+  // Update stored quantity
+  pendingApprovals[messageId].quantity = newQty.toString();
+  
+  await ctx.answerCallbackQuery(`Quantity updated to ${newQty}`);
+});
+
+// --- Manager Item Approval ---
+bot.callbackQuery(/approve_item:(.+):(.+)/, async ctx => {
+  const itemId = ctx.match![1];
+  const quantity = parseInt(ctx.match![2]);
+  const messageId = ctx.callbackQuery.message?.message_id;
+  
+  if (!messageId || !pendingApprovals[messageId]) {
+    return await ctx.answerCallbackQuery("Approval record not found");
   }
+  
+  const approval = pendingApprovals[messageId];
+  const item = approval.item;
+  
+  console.log(`[DEBUG] Manager approved quantity ${quantity} for item: ${item.item_name}`);
+  
+  // Update message to show approval
+  await ctx.editMessageText(`✅ APPROVED: ${item.item_name} x${quantity}`, {
+    reply_markup: undefined
+  });
   
   // Post approved item with quantity to the appropriate topic
   await bot.api.sendMessage(GROUP_CHAT_ID, `🛒 ${item.category_name || ''} ${item.item_name} x${quantity}`, { 
@@ -557,8 +616,8 @@ bot.on('poll_answer', async (ctx) => {
   
   // Send directly to Dispatcher Topic with quantity
   const dispatchKeyboard = new InlineKeyboard()
-    .text("✅ Approve", `dispatch_approve:${item.item_sku}:${pollId}`)
-    .text("❌ Reject", `dispatch_reject:${item.item_sku}:${pollId}`);
+    .text("✅ Approve", `dispatch_approve:${item.item_sku}:${messageId}`)
+    .text("❌ Reject", `dispatch_reject:${item.item_sku}:${messageId}`);
   
   const now = new Date();
   const dateStamp = `${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1).toString().padStart(2, '0')}.${now.getFullYear().toString().slice(-2)} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -579,19 +638,42 @@ bot.on('poll_answer', async (ctx) => {
     item: item,
     quantity: quantity,
     supplier: supplier.supplier,
-    originalPollId: pollId,
+    originalMessageId: messageId,
     dateStamp: dateStamp
   };
   console.log(`[DEBUG] Dispatcher review message posted to Dispatcher Topic (ID: ${DISPATCHER_TOPIC_ID}) for item: ${item.item_name} x${quantity}`);
   
   // Clean up approval tracking
-  delete pendingApprovals[pollId];
+  delete pendingApprovals[messageId];
+});
+
+// --- Manager Item Cancellation ---
+bot.callbackQuery(/cancel_item:(.+)/, async ctx => {
+  const itemId = ctx.match![1];
+  const messageId = ctx.callbackQuery.message?.message_id;
+  
+  if (!messageId || !pendingApprovals[messageId]) {
+    return await ctx.answerCallbackQuery("Approval record not found");
+  }
+  
+  const approval = pendingApprovals[messageId];
+  const item = approval.item;
+  
+  // Update message to show cancellation
+  await ctx.editMessageText(`❌ CANCELLED: ${item.item_name}`, {
+    reply_markup: undefined
+  });
+  
+  // Clean up approval tracking
+  delete pendingApprovals[messageId];
+  
+  await ctx.answerCallbackQuery("Item cancelled");
 });
 
 // --- Dispatcher Approval ---
 bot.callbackQuery(/dispatch_approve:(.+):(.+)/, async ctx => {
   const itemId = ctx.match![1];
-  const originalPollId = ctx.match![2];
+  const originalMessageId = ctx.match![2];
   const messageId = ctx.callbackQuery.message?.message_id;
   
   if (!messageId || !pendingDispatch[messageId]) {
@@ -639,7 +721,7 @@ bot.callbackQuery(/dispatch_approve:(.+):(.+)/, async ctx => {
 // --- Dispatcher Rejection ---
 bot.callbackQuery(/dispatch_reject:(.+):(.+)/, async ctx => {
   const itemId = ctx.match![1];
-  const originalPollId = ctx.match![2];
+  const originalMessageId = ctx.match![2];
   const messageId = ctx.callbackQuery.message?.message_id;
   
   if (!messageId || !pendingDispatch[messageId]) {
