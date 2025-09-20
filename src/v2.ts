@@ -94,20 +94,21 @@ function buildReplyKeyboard() {
 }
 
 // --- Start Command ---
-const startKeyboard = new InlineKeyboard()
-  .text("Kitchen", "select_kitchen")
-  .text("Bar", "select_bar")
-  .text("Search", "start_inline_search");
+const startReplyKeyboard = new Keyboard()
+  .text("Kitchen").text("Bar").row()
+  .text("@").text("Mark Mode").row()
+  .text("Today List").text("Custom List").row()
+  .resized();
 
 bot.command("start", async ctx => {
   await ctx.reply("⚡ Welcome to KALI Easy Order V2!\nSelect a main category:", {
-    reply_markup: startKeyboard,
+    reply_markup: startReplyKeyboard,
   });
 });
 
-// --- Show Categories ---
-bot.callbackQuery(["select_kitchen", "select_bar"], async ctx => {
-  const parent = ctx.callbackQuery.data === "select_kitchen" ? "kitchen" : "bar";
+// --- Handle Reply Keyboard Buttons ---
+bot.hears(["Kitchen", "Bar"], async ctx => {
+  const parent = ctx.message!.text === "Kitchen" ? "kitchen" : "bar";
   
   // Define sub-categories for each parent
   const subCategories = {
@@ -129,12 +130,48 @@ bot.callbackQuery(["select_kitchen", "select_bar"], async ctx => {
   
   replyKeyboard.text("🔙 Back to Main").resized();
   
-  await ctx.editMessageText(`Select ${parent} sub-category:`);
+  await ctx.reply(`Select ${parent} sub-category:`);
   await ctx.reply(`Choose a ${parent} sub-category:`, {
     reply_markup: replyKeyboard
   });
   
   if (ctx.from) userContext[ctx.from.id] = "categories";
+});
+
+// --- Handle @ Button (Inline Mode) ---
+bot.hears("@", async ctx => {
+  await ctx.reply("Type @kalisystembot <item> in any chat to search instantly, or tap below to start inline search.", {
+    reply_markup: new InlineKeyboard().switchInlineCurrent("").row()
+  });
+});
+
+// --- Handle Mark Mode Button ---
+bot.hears("Mark Mode", async ctx => {
+  await ctx.reply("Mark Mode feature will be implemented in future version.");
+});
+
+// --- Handle Today List Button ---
+bot.hears("Today List", async ctx => {
+  // Check if todaylist.csv exists and display it
+  const todayListPath = `${DATA_DIR}/todaylist.csv`;
+  if (fs.existsSync(todayListPath)) {
+    const todayList = fs.readFileSync(todayListPath, 'utf8');
+    await ctx.reply(`📋 Today's List:\n\`\`\`\n${todayList}\n\`\`\``);
+  } else {
+    await ctx.reply("📋 Today's list is empty or not found.");
+  }
+});
+
+// --- Handle Custom List Button ---
+bot.hears("Custom List", async ctx => {
+  // Check if customlist.csv exists and display it
+  const customListPath = `${DATA_DIR}/customlist.csv`;
+  if (fs.existsSync(customListPath)) {
+    const customList = fs.readFileSync(customListPath, 'utf8');
+    await ctx.reply(`📝 Custom List:\n\`\`\`\n${customList}\n\`\`\``);
+  } else {
+    await ctx.reply("📝 Custom list is empty or not found.");
+  }
 });
 
 // --- Handle Sub-category Selection ---
@@ -166,9 +203,8 @@ bot.hears(["meat", "fish/seafood", "dairy", "veggies", "spices", "dry", "sauce",
 // --- Back to Main Menu ---
 bot.hears("🔙 Back to Main", async ctx => {
   await ctx.reply("⚡ Welcome to KALI Easy Order V2!\nSelect a main category:", {
-    reply_markup: startKeyboard,
+    reply_markup: startReplyKeyboard,
   });
-  await ctx.reply("Main menu:", { reply_markup: { remove_keyboard: true } });
 });
 
 // --- Show Items ---
