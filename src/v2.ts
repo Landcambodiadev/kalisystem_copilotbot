@@ -1055,17 +1055,18 @@ console.log('[DEBUG] Starting V2 bot...');
 // Check if we should use webhooks (production) or polling (development)
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 const PORT = process.env.PORT;
-const isProduction = process.env.NODE_ENV === 'production' || (WEBHOOK_URL && PORT);
+const isProduction = process.env.NODE_ENV === 'production' || Boolean(WEBHOOK_URL);
 
 console.log('[DEBUG] Environment check:');
 console.log('[DEBUG] - NODE_ENV:', process.env.NODE_ENV);
 console.log('[DEBUG] - WEBHOOK_URL:', WEBHOOK_URL);
 console.log('[DEBUG] - PORT:', PORT);
 console.log('[DEBUG] - isProduction:', isProduction);
+
 if (isProduction) {
   console.log('[DEBUG] Starting V2 bot in WEBHOOK mode for production...');
   console.log('[DEBUG] Webhook URL:', WEBHOOK_URL);
-  console.log('[DEBUG] Port:', PORT || process.env.PORT || '3000');
+  console.log('[DEBUG] Port:', PORT || '3000');
   
   // Create Express app for webhooks
   const app = express();
@@ -1102,7 +1103,7 @@ if (isProduction) {
   console.log('[DEBUG] Routes registered: POST /webhook, GET /');
   
   // Start server
-  const port = parseInt(PORT || process.env.PORT || '3000');
+  const port = parseInt(PORT || '3000');
   console.log('[DEBUG] About to start server on port:', port);
   app.listen(port, async () => {
     console.log('[DEBUG] V2 Bot webhook server started successfully on port', port);
