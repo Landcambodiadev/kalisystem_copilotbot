@@ -2,9 +2,9 @@
   "name": "kalisystem_copilotbot",
   "version": "1.0.0",
   "description": "Telegram order bot for kitchen/bar/manager/supplier order management.",
-  "main": "src/kali_order_bot.ts",
+  "main": "src/v2.ts",
   "scripts": {
-    "start": "node -r dotenv/config -r ts-node/register src/kali_order_bot.ts",
+    "start": "node -r dotenv/config -r ts-node/register src/v2.ts",
     "start:v2": "node -r dotenv/config -r ts-node/register src/v2.ts",
     "build": "tsc",
     "build:v2": "tsc",
