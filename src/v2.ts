@@ -70,6 +70,11 @@ const pendingApprovals: Record<string, any> = {}; // messageId -> item details
 const pendingDispatch: Record<string, any> = {}; // messageId -> item details
 const pendingPolls: Record<string, any> = {}; // pollId -> poll details
 
+// Mark mode tracking
+const userMarkMode: Record<number, boolean> = {}; // userId -> isMarkMode
+const markedItems: Record<number, Record<string, any>> = {}; // userId -> { itemSku: item }
+const userMarkContext: Record<number, string> = {}; // userId -> current context (kitchen/bar/categories)
+
 // === USER FLOW ===
 const userContext: Record<number, string> = {};
 let kitchenOrder: Record<string, number> = {};
@@ -93,6 +98,23 @@ function buildReplyKeyboard() {
     .resized();
 }
 
+function buildMarkModeKeyboard(userId: number, context?: string) {
+  const keyboard = new Keyboard();
+  
+  if (context === "categories") {
+    // Show sub-categories and main button
+    keyboard.text("🔙 Back to Main").row();
+  } else {
+    // Main mark mode keyboard
+    keyboard.text("Kitchen").text("Bar").row();
+  }
+  
+  keyboard.text("Place Order").row();
+  keyboard.text("Stop Mark Mode").row();
+  
+  return keyboard.resized();
+}
+
 // --- Start Command ---
 const startReplyKeyboard = new Keyboard()
   .text("Kitchen").text("Bar").row()
@@ -108,34 +130,69 @@ bot.command("start", async ctx => {
 
 // --- Handle Reply Keyboard Buttons ---
 bot.hears(["Kitchen", "Bar"], async ctx => {
+  const userId = ctx.from?.id;
+  if (!userId) return;
+  
   const parent = ctx.message!.text === "Kitchen" ? "kitchen" : "bar";
   
-  // Define sub-categories for each parent
-  const subCategories = {
-    kitchen: ["meat", "fish/seafood", "dairy", "veggies", "spices", "dry", "sauce", "cleaning", "plastics"],
-    bar: ["soft", "alcohol", "coffee/tea/syrup", "cigs", "households", "fruits", "ingredients"]
-  };
-  
-  const subCats = subCategories[parent as keyof typeof subCategories] || [];
-  const replyKeyboard = new Keyboard();
-  
-  // Add sub-category buttons in rows of 3
-  for (let i = 0; i < subCats.length; i += 3) {
-    const row = subCats.slice(i, i + 3);
-    replyKeyboard.text(row[0]);
-    if (row[1]) replyKeyboard.text(row[1]);
-    if (row[2]) replyKeyboard.text(row[2]);
-    replyKeyboard.row();
+  if (userMarkMode[userId]) {
+    // Mark mode: show categories with mark mode keyboard
+    userMarkContext[userId] = "categories";
+    
+    // Define sub-categories for each parent
+    const subCategories = {
+      kitchen: ["meat", "fish/seafood", "dairy", "veggies", "spices", "dry", "sauce", "cleaning", "plastics"],
+      bar: ["soft", "alcohol", "coffee/tea/syrup", "cigs", "households", "fruits", "ingredients"]
+    };
+    
+    const subCats = subCategories[parent as keyof typeof subCategories] || [];
+    const replyKeyboard = new Keyboard();
+    
+    // Add sub-category buttons in rows of 3
+    for (let i = 0; i < subCats.length; i += 3) {
+      const row = subCats.slice(i, i + 3);
+      replyKeyboard.text(row[0]);
+      if (row[1]) replyKeyboard.text(row[1]);
+      if (row[2]) replyKeyboard.text(row[2]);
+      replyKeyboard.row();
+    }
+    
+    replyKeyboard.text("🔙 Back to Main").row();
+    replyKeyboard.text("Place Order").row();
+    replyKeyboard.text("Stop Mark Mode").row();
+    replyKeyboard.resized();
+    
+    await ctx.reply(`Select ${parent} sub-category (Mark Mode):`, {
+      reply_markup: replyKeyboard
+    });
+  } else {
+    // Normal mode: show categories with normal flow
+    const subCategories = {
+      kitchen: ["meat", "fish/seafood", "dairy", "veggies", "spices", "dry", "sauce", "cleaning", "plastics"],
+      bar: ["soft", "alcohol", "coffee/tea/syrup", "cigs", "households", "fruits", "ingredients"]
+    };
+    
+    const subCats = subCategories[parent as keyof typeof subCategories] || [];
+    const replyKeyboard = new Keyboard();
+    
+    // Add sub-category buttons in rows of 3
+    for (let i = 0; i < subCats.length; i += 3) {
+      const row = subCats.slice(i, i + 3);
+      replyKeyboard.text(row[0]);
+      if (row[1]) replyKeyboard.text(row[1]);
+      if (row[2]) replyKeyboard.text(row[2]);
+      replyKeyboard.row();
+    }
+    
+    replyKeyboard.text("🔙 Back to Main").resized();
+    
+    await ctx.reply(`Select ${parent} sub-category:`);
+    await ctx.reply(`Choose a ${parent} sub-category:`, {
+      reply_markup: replyKeyboard
+    });
   }
   
-  replyKeyboard.text("🔙 Back to Main").resized();
-  
-  await ctx.reply(`Select ${parent} sub-category:`);
-  await ctx.reply(`Choose a ${parent} sub-category:`, {
-    reply_markup: replyKeyboard
-  });
-  
-  if (ctx.from) userContext[ctx.from.id] = "categories";
+  userContext[userId] = "categories";
 });
 
 // --- Handle @ Button (Inline Mode) ---
@@ -147,7 +204,80 @@ bot.hears("@", async ctx => {
 
 // --- Handle Mark Mode Button ---
 bot.hears("Mark Mode", async ctx => {
-  await ctx.reply("Mark Mode feature will be implemented in future version.");
+  const userId = ctx.from?.id;
+  if (!userId) return;
+  
+  userMarkMode[userId] = true;
+  markedItems[userId] = {};
+  userMarkContext[userId] = "main";
+  
+  await ctx.reply("🔹 Mark Mode Enabled!\nClick items to mark them for bulk ordering.", {
+    reply_markup: buildMarkModeKeyboard(userId)
+  });
+});
+
+// --- Handle Place Order Button ---
+bot.hears("Place Order", async ctx => {
+  const userId = ctx.from?.id;
+  if (!userId || !userMarkMode[userId]) return;
+  
+  const marked = markedItems[userId] || {};
+  const markedItemsList = Object.values(marked);
+  
+  if (markedItemsList.length === 0) {
+    return await ctx.reply("No items marked for ordering.");
+  }
+  
+  // Group items by supplier
+  const supplierGroups: Record<string, any[]> = {};
+  markedItemsList.forEach((item: any) => {
+    const supplier = item.default_supplier || 'Unknown Supplier';
+    if (!supplierGroups[supplier]) {
+      supplierGroups[supplier] = [];
+    }
+    supplierGroups[supplier].push(item);
+  });
+  
+  // Build order summary message
+  let orderSummary = "📋 **Marked Items Order Summary:**\n\n";
+  
+  Object.entries(supplierGroups).forEach(([supplier, items]) => {
+    orderSummary += `**${supplier}:**\n`;
+    items.forEach((item: any) => {
+      const defaultQty = item.default_quantity || '1';
+      orderSummary += `• ${item.item_name} x${defaultQty} (${item.measure_unit || 'pc'})\n`;
+    });
+    orderSummary += '\n';
+  });
+  
+  orderSummary += "Edit quantities if needed and send back to bot.\n";
+  orderSummary += "Or reply with:\n";
+  orderSummary += "• 'MANAGER' - Send to manager\n";
+  orderSummary += "• 'DISPATCHER' - Send to dispatcher";
+  
+  // Disable mark mode
+  userMarkMode[userId] = false;
+  markedItems[userId] = {};
+  userMarkContext[userId] = "";
+  
+  await ctx.reply(orderSummary, {
+    reply_markup: startReplyKeyboard,
+    parse_mode: 'Markdown'
+  });
+});
+
+// --- Handle Stop Mark Mode Button ---
+bot.hears("Stop Mark Mode", async ctx => {
+  const userId = ctx.from?.id;
+  if (!userId) return;
+  
+  userMarkMode[userId] = false;
+  markedItems[userId] = {};
+  userMarkContext[userId] = "";
+  
+  await ctx.reply("🔹 Mark Mode Disabled", {
+    reply_markup: startReplyKeyboard
+  });
 });
 
 // --- Handle Today List Button ---
@@ -177,34 +307,145 @@ bot.hears("Custom List", async ctx => {
 // --- Handle Sub-category Selection ---
 bot.hears(["meat", "fish/seafood", "dairy", "veggies", "spices", "dry", "sauce", "cleaning", "plastics", 
           "soft", "alcohol", "coffee/tea/syrup", "cigs", "households", "fruits", "ingredients"], async ctx => {
+  const userId = ctx.from?.id;
+  if (!userId) return;
+  
   const subCategory = ctx.message!.text;
   if (!subCategory) return;
   
   const items = loadJson(ITEM_JSON).filter((i: any) => i.sub_category === subCategory);
   
   if (items.length === 0) {
+    const keyboard = userMarkMode[userId] ? buildMarkModeKeyboard(userId, "categories") : startReplyKeyboard;
     return await ctx.reply(`No items found for ${subCategory}`, {
-      reply_markup: { remove_keyboard: true }
+      reply_markup: keyboard
     });
   }
   
   const itemsKeyboard = new InlineKeyboard();
-  items.forEach((item: any) =>
-    itemsKeyboard.text(item.item_name, `add_to_order:${item.item_sku}`).row()
-  );
+  
+  if (userMarkMode[userId]) {
+    // Mark mode: show items with mark/unmark buttons
+    items.forEach((item: any) => {
+      const isMarked = markedItems[userId] && markedItems[userId][item.item_sku];
+      const displayName = isMarked ? `🔹 ${item.item_name}` : item.item_name;
+      const action = isMarked ? `unmark_item:${item.item_sku}` : `mark_item:${item.item_sku}`;
+      itemsKeyboard.text(displayName, action).row();
+    });
+  } else {
+    // Normal mode: show items with add to order buttons
+    items.forEach((item: any) =>
+      itemsKeyboard.text(item.item_name, `add_to_order:${item.item_sku}`).row()
+    );
+  }
   
   await ctx.reply(`${subCategory.charAt(0).toUpperCase() + subCategory.slice(1)} items:`, { 
     reply_markup: itemsKeyboard 
   });
   
-  if (ctx.from) userContext[ctx.from.id] = "items";
+  userContext[userId] = "items";
 });
 
 // --- Back to Main Menu ---
 bot.hears("🔙 Back to Main", async ctx => {
-  await ctx.reply("⚡ Welcome to KALI Easy Order V2!\nSelect a main category:", {
-    reply_markup: startReplyKeyboard,
-  });
+  const userId = ctx.from?.id;
+  if (!userId) return;
+  
+  if (userMarkMode[userId]) {
+    userMarkContext[userId] = "main";
+    await ctx.reply("🔹 Mark Mode - Select category:", {
+      reply_markup: buildMarkModeKeyboard(userId),
+    });
+  } else {
+    await ctx.reply("⚡ Welcome to KALI Easy Order V2!\nSelect a main category:", {
+      reply_markup: startReplyKeyboard,
+    });
+  }
+});
+
+// === MARK MODE HANDLERS ===
+
+// --- Mark Item ---
+bot.callbackQuery(/mark_item:(.+)/, async ctx => {
+  const userId = ctx.from?.id;
+  if (!userId || !userMarkMode[userId]) return;
+  
+  const itemId = ctx.match![1];
+  const items = loadJson(ITEM_JSON);
+  const item = items.find((i: any) => String(i.item_sku) === itemId);
+  
+  if (!item) return await ctx.answerCallbackQuery("Item not found");
+  
+  // Initialize marked items for user if not exists
+  if (!markedItems[userId]) {
+    markedItems[userId] = {};
+  }
+  
+  // Mark the item
+  markedItems[userId][itemId] = item;
+  
+  // Update the button text to show it's marked
+  const keyboard = ctx.callbackQuery.message?.reply_markup;
+  if (keyboard) {
+    const newKeyboard = new InlineKeyboard();
+    keyboard.inline_keyboard.forEach(row => {
+      row.forEach(button => {
+        if (button.callback_data === `mark_item:${itemId}`) {
+          newKeyboard.text(`🔹 ${item.item_name}`, `unmark_item:${itemId}`).row();
+        } else {
+          newKeyboard.text(button.text, button.callback_data || '').row();
+        }
+      });
+    });
+    
+    try {
+      await ctx.editMessageReplyMarkup({ reply_markup: newKeyboard });
+    } catch (error) {
+      // Ignore edit errors
+    }
+  }
+  
+  await ctx.answerCallbackQuery(`🔹 Marked: ${item.item_name}`);
+});
+
+// --- Unmark Item ---
+bot.callbackQuery(/unmark_item:(.+)/, async ctx => {
+  const userId = ctx.from?.id;
+  if (!userId || !userMarkMode[userId]) return;
+  
+  const itemId = ctx.match![1];
+  const items = loadJson(ITEM_JSON);
+  const item = items.find((i: any) => String(i.item_sku) === itemId);
+  
+  if (!item) return await ctx.answerCallbackQuery("Item not found");
+  
+  // Unmark the item
+  if (markedItems[userId]) {
+    delete markedItems[userId][itemId];
+  }
+  
+  // Update the button text to show it's unmarked
+  const keyboard = ctx.callbackQuery.message?.reply_markup;
+  if (keyboard) {
+    const newKeyboard = new InlineKeyboard();
+    keyboard.inline_keyboard.forEach(row => {
+      row.forEach(button => {
+        if (button.callback_data === `unmark_item:${itemId}`) {
+          newKeyboard.text(item.item_name, `mark_item:${itemId}`).row();
+        } else {
+          newKeyboard.text(button.text, button.callback_data || '').row();
+        }
+      });
+    });
+    
+    try {
+      await ctx.editMessageReplyMarkup({ reply_markup: newKeyboard });
+    } catch (error) {
+      // Ignore edit errors
+    }
+  }
+  
+  await ctx.answerCallbackQuery(`Unmarked: ${item.item_name}`);
 });
 
 // --- Show Items ---
