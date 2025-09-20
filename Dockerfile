@@ -6,4 +6,4 @@ WORKDIR /app
 COPY . .
 RUN npm install
 
-CMD ["npx", "ts-node", "src/kali_order_bot.ts"]
+CMD ["npx", "ts-node", "src/v2.ts"]
