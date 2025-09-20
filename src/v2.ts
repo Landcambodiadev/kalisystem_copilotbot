@@ -1,5 +1,5 @@
 import { Bot, InlineKeyboard, Keyboard } from 'grammy';
-import { webhookCallback } from 'grammy/webhooks/node';
+import { webhookCallback } from 'grammy';
 import { createServer } from 'http';
 import fs from 'fs';
 import path from 'path';
