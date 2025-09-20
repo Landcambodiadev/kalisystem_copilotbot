@@ -1042,12 +1042,12 @@ console.log('[DEBUG] Starting V2 bot...');
 // Check if we should use webhooks (production) or polling (development)
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 const PORT = process.env.PORT;
-const isProduction = WEBHOOK_URL && PORT;
+const isProduction = process.env.NODE_ENV === 'production' || (WEBHOOK_URL && PORT);
 
 if (isProduction) {
   console.log('[DEBUG] Starting V2 bot in WEBHOOK mode for production...');
   console.log('[DEBUG] Webhook URL:', WEBHOOK_URL);
-  console.log('[DEBUG] Port:', PORT);
+  console.log('[DEBUG] Port:', PORT || process.env.PORT || '3000');
   
   // Create Express app for webhooks
   const app = express();
@@ -1070,19 +1070,24 @@ if (isProduction) {
   });
   
   // Start server
-  app.listen(parseInt(PORT), async () => {
-    console.log('[DEBUG] V2 Bot webhook server started successfully on port', PORT);
+  const port = parseInt(PORT || process.env.PORT || '3000');
+  app.listen(port, async () => {
+    console.log('[DEBUG] V2 Bot webhook server started successfully on port', port);
     
     // Set webhook
-    try {
-      await bot.api.setWebhook(`${WEBHOOK_URL}/webhook`);
-      console.log('[DEBUG] Webhook set successfully');
-    } catch (error) {
-      console.error('[ERROR] Failed to set webhook:', error);
-      // if (error.message.includes('404: Not Found')) {
-      //   console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
-      // }
-      process.exit(1);
+    if (WEBHOOK_URL) {
+      try {
+        await bot.api.setWebhook(`${WEBHOOK_URL}/webhook`);
+        console.log('[DEBUG] Webhook set successfully');
+      } catch (error) {
+        console.error('[ERROR] Failed to set webhook:', error);
+        if ((error as Error).message.includes('404: Not Found')) {
+          console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
+        }
+        process.exit(1);
+      }
+    } else {
+      console.log('[DEBUG] No WEBHOOK_URL provided, webhook not set');
     }
   });
   
