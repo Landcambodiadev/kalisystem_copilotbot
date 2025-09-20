@@ -1100,7 +1100,5 @@ if (isProduction) {
     process.exit(1);
   }).finally(() => {
     console.log('[DEBUG] V2 Bot start() promise completed (either resolved or rejected)');
-    if (error.message.includes('404: Not Found')) {
-      console.error('[ERROR] Invalid BOT_TOKEN! Please check your .env file and ensure the token is correct.');
-      console.error('[ERROR] Get a new token from @BotFather on Telegram if needed.');
-    }
+  });
+}
