@@ -1086,7 +1086,7 @@ if (isProduction) {
       console.log('[DEBUG] Sent 200 OK response');
     } catch (error) {
       console.error('[ERROR] Webhook error:', error);
-      console.error('[ERROR] Webhook error stack:', error.stack);
+      console.error('[ERROR] Webhook error stack:', (error as Error).stack);
       res.status(500).send('Error');
       console.log('[DEBUG] Sent 500 Error response');
     }
@@ -1120,7 +1120,7 @@ if (isProduction) {
         console.log('[DEBUG] Webhook info after setting:', JSON.stringify(webhookInfo, null, 2));
       } catch (error) {
         console.error('[ERROR] Failed to set webhook:', error);
-        console.error('[ERROR] Webhook setup error stack:', error.stack);
+        console.error('[ERROR] Webhook setup error stack:', (error as Error).stack);
         if ((error as Error).message.includes('404: Not Found')) {
           console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
         }
