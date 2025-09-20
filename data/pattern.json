@@ -1,0 +1,92 @@
+[
+  {
+    "level_1": 1,
+    "level_2": null,
+    "level_3": null,
+    "item_filter": "kitchen",
+    "display_text": "1. KITCHEN",
+    "description": "Kitchen items and supplies",
+    "query_pattern": ""
+  },
+  {
+    "level_1": 2,
+    "level_2": null,
+    "level_3": null,
+    "item_filter": "bar",
+    "display_text": "2. BAR",
+    "description": "Bar items and supplies",
+    "query_pattern": ""
+  },
+  {
+    "level_1": 1,
+    "level_2": 1,
+    "level_3": null,
+    "item_filter": "kitchen_food",
+    "display_text": "1. FOOD",
+    "description": "Meat, fish, dairy, vegetables, spices, sauces",
+    "query_pattern": "1 "
+  },
+  {
+    "level_1": 1,
+    "level_2": 2,
+    "level_3": null,
+    "item_filter": "kitchen_households",
+    "display_text": "2. HOUSEHOLDS",
+    "description": "Cleaning, plastics, dry goods",
+    "query_pattern": "1 "
+  },
+  {
+    "level_1": 2,
+    "level_2": 1,
+    "level_3": null,
+    "item_filter": "bar_food",
+    "display_text": "1. FOOD",
+    "description": "Fruits, ingredients, desserts",
+    "query_pattern": "2 "
+  },
+  {
+    "level_1": 2,
+    "level_2": 2,
+    "level_3": null,
+    "item_filter": "bar_households",
+    "display_text": "2. HOUSEHOLDS",
+    "description": "Cleaning, cups, office supplies",
+    "query_pattern": "2 "
+  },
+  {
+    "level_1": 1,
+    "level_2": 1,
+    "level_3": 1,
+    "item_filter": "kitchen_food_items",
+    "display_text": "KITCHEN FOOD ITEMS",
+    "description": "meat,fish/seafood,dairy,veggies,spices,sauce",
+    "query_pattern": "1 1"
+  },
+  {
+    "level_1": 1,
+    "level_2": 2,
+    "level_3": 1,
+    "item_filter": "kitchen_households_items",
+    "display_text": "KITCHEN HOUSEHOLDS ITEMS",
+    "description": "cleaning,plastics,dry",
+    "query_pattern": "1 2"
+  },
+  {
+    "level_1": 2,
+    "level_2": 1,
+    "level_3": 1,
+    "item_filter": "bar_food_items",
+    "display_text": "BAR FOOD ITEMS",
+    "description": "fruits,ingredients",
+    "query_pattern": "2 1"
+  },
+  {
+    "level_1": 2,
+    "level_2": 2,
+    "level_3": 1,
+    "item_filter": "bar_households_items",
+    "display_text": "BAR HOUSEHOLDS ITEMS",
+    "description": "households",
+    "query_pattern": "2 2"
+  }
+]

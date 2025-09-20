@@ -1,0 +1,11 @@
+level_1,level_2,level_3,item_filter,display_text,description,query_pattern
+1,,,kitchen,"1. KITCHEN","Kitchen items and supplies",""
+2,,,bar,"2. BAR","Bar items and supplies",""
+1,1,,kitchen_food,"1. FOOD","Meat, fish, dairy, vegetables, spices, sauces","1 "
+1,2,,kitchen_households,"2. HOUSEHOLDS","Cleaning, plastics, dry goods","1 "
+2,1,,bar_food,"1. FOOD","Fruits, ingredients, desserts","2 "
+2,2,,bar_households,"2. HOUSEHOLDS","Cleaning, cups, office supplies","2 "
+1,1,1,kitchen_food_items,"KITCHEN FOOD ITEMS","meat,fish/seafood,dairy,veggies,spices,sauce","1 1"
+1,2,1,kitchen_households_items,"KITCHEN HOUSEHOLDS ITEMS","cleaning,plastics,dry","1 2"
+2,1,1,bar_food_items,"BAR FOOD ITEMS","fruits,ingredients","2 1"
+2,2,1,bar_households_items,"BAR HOUSEHOLDS ITEMS","households","2 2"
