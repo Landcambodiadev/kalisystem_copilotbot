@@ -1,4 +1,6 @@
 import { Bot, InlineKeyboard, Keyboard } from 'grammy';
+import { webhookCallback } from 'grammy/webhooks/node';
+import { createServer } from 'http';
 import fs from 'fs';
 import path from 'path';
 
@@ -1037,15 +1039,54 @@ bot.command("help", async ctx => {
 });
 
 console.log('[DEBUG] Starting V2 bot...');
-bot.start().then(() => {
-  console.log('[DEBUG] V2 Bot started successfully!');
-}).catch((error) => {
-  console.error('[ERROR] Failed to start V2 bot:', error);
-  if (error.message.includes('404: Not Found')) {
-    console.error('[ERROR] Invalid BOT_TOKEN! Please check your .env file and ensure the token is correct.');
-    console.error('[ERROR] Get a new token from @BotFather on Telegram if needed.');
-  }
-  process.exit(1);
-}).finally(() => {
-  console.log('[DEBUG] V2 Bot start() promise completed (either resolved or rejected)');
-});
+
+// Check if we should use webhooks (production) or polling (development)
+const WEBHOOK_URL = process.env.WEBHOOK_URL;
+const PORT = process.env.PORT;
+const isProduction = WEBHOOK_URL && PORT;
+
+if (isProduction) {
+  console.log('[DEBUG] Starting V2 bot in WEBHOOK mode for production...');
+  console.log('[DEBUG] Webhook URL:', WEBHOOK_URL);
+  console.log('[DEBUG] Port:', PORT);
+  
+  // Set webhook
+  bot.api.setWebhook(WEBHOOK_URL).then(() => {
+    console.log('[DEBUG] Webhook set successfully');
+    
+    // Create HTTP server for webhooks
+    const server = createServer(webhookCallback(bot, 'node'));
+    
+    server.listen(parseInt(PORT), () => {
+      console.log('[DEBUG] V2 Bot webhook server started successfully on port', PORT);
+    });
+    
+    server.on('error', (error) => {
+      console.error('[ERROR] Webhook server error:', error);
+      process.exit(1);
+    });
+    
+  }).catch((error) => {
+    console.error('[ERROR] Failed to set webhook:', error);
+    if (error.message.includes('404: Not Found')) {
+      console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
+    }
+    process.exit(1);
+  });
+  
+} else {
+  console.log('[DEBUG] Starting V2 bot in POLLING mode for development...');
+  
+  bot.start().then(() => {
+    console.log('[DEBUG] V2 Bot started successfully in polling mode!');
+  }).catch((error) => {
+    console.error('[ERROR] Failed to start V2 bot:', error);
+    if (error.message.includes('404: Not Found')) {
+      console.error('[ERROR] Invalid BOT_TOKEN! Please check your .env file and ensure the token is correct.');
+      console.error('[ERROR] Get a new token from @BotFather on Telegram if needed.');
+    }
+    process.exit(1);
+  }).finally(() => {
+    console.log('[DEBUG] V2 Bot start() promise completed (either resolved or rejected)');
+  });
+}
