@@ -4,8 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const grammy_1 = require("grammy");
-const grammy_2 = require("grammy");
-const http_1 = require("http");
+const express_1 = __importDefault(require("express"));
 const fs_1 = __importDefault(require("fs"));
 // === CONFIG ===
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -857,24 +856,39 @@ if (isProduction) {
     console.log('[DEBUG] Starting V2 bot in WEBHOOK mode for production...');
     console.log('[DEBUG] Webhook URL:', WEBHOOK_URL);
     console.log('[DEBUG] Port:', PORT);
-    // Set webhook
-    bot.api.setWebhook(WEBHOOK_URL).then(() => {
-        console.log('[DEBUG] Webhook set successfully');
-        // Create HTTP server for webhooks
-        const server = (0, http_1.createServer)((0, grammy_2.webhookCallback)(bot, 'node:http'));
-        server.listen(parseInt(PORT), () => {
-            console.log('[DEBUG] V2 Bot webhook server started successfully on port', PORT);
-        });
-        server.on('error', (error) => {
-            console.error('[ERROR] Webhook server error:', error);
-            process.exit(1);
-        });
-    }).catch((error) => {
-        console.error('[ERROR] Failed to set webhook:', error);
-        if (error.message.includes('404: Not Found')) {
-            console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
+    // Create Express app for webhooks
+    const app = (0, express_1.default)();
+    app.use(express_1.default.json());
+    // Webhook endpoint
+    app.post('/webhook', async (req, res) => {
+        try {
+            await bot.handleUpdate(req.body);
+            res.status(200).send('OK');
         }
-        process.exit(1);
+        catch (error) {
+            console.error('[ERROR] Webhook error:', error);
+            res.status(500).send('Error');
+        }
+    });
+    // Health check endpoint
+    app.get('/', (req, res) => {
+        res.send('KALI Order Bot V2 is running!');
+    });
+    // Start server
+    app.listen(parseInt(PORT), async () => {
+        console.log('[DEBUG] V2 Bot webhook server started successfully on port', PORT);
+        // Set webhook
+        try {
+            await bot.api.setWebhook(`${WEBHOOK_URL}/webhook`);
+            console.log('[DEBUG] Webhook set successfully');
+        }
+        catch (error) {
+            console.error('[ERROR] Failed to set webhook:', error);
+            if (error.message.includes('404: Not Found')) {
+                console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
+            }
+            process.exit(1);
+        }
     });
 }
 else {
