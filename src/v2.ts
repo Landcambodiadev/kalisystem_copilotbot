@@ -118,7 +118,7 @@ function buildMarkModeKeyboard(userId: number, context?: string) {
 // --- Start Command ---
 const startReplyKeyboard = new Keyboard()
   .text("Kitchen").text("Bar").row()
-  .text("@").text("Mark Mode").row()
+  .text("Mark Mode").row()
   .text("Today List").text("Custom List").row()
   .resized();
 
@@ -193,13 +193,6 @@ bot.hears(["Kitchen", "Bar"], async ctx => {
   }
   
   userContext[userId] = "categories";
-});
-
-// --- Handle @ Button (Inline Mode) ---
-bot.hears("@", async ctx => {
-  await ctx.reply("🔍 Inline Search Mode", {
-    reply_markup: new InlineKeyboard().switchInlineCurrent("")
-  });
 });
 
 // --- Handle Mark Mode Button ---
