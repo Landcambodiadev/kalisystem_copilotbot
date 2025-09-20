@@ -387,16 +387,14 @@ bot.callbackQuery(/mark_item:(.+)/, async ctx => {
   // Update the button text to show it's marked
   const keyboard = ctx.callbackQuery.message?.reply_markup;
   if (keyboard) {
-    const newKeyboard = new InlineKeyboard();
-    keyboard.inline_keyboard.forEach(row => {
-      row.forEach(button => {
-        if (button.callback_data === `mark_item:${itemId}`) {
-          newKeyboard.text(`🔹 ${item.item_name}`, `unmark_item:${itemId}`).row();
-        } else {
-          newKeyboard.text(button.text, button.callback_data || '').row();
+    const newKeyboard = InlineKeyboard.from(keyboard.inline_keyboard.map(row =>
+      row.map(button => {
+        if ('callback_data' in button && button.callback_data === `mark_item:${itemId}`) {
+          return { text: `🔹 ${item.item_name}`, callback_data: `unmark_item:${itemId}` };
         }
-      });
-    });
+        return button;
+      })
+    ));
     
     try {
       await ctx.editMessageReplyMarkup({ reply_markup: newKeyboard });
@@ -427,16 +425,14 @@ bot.callbackQuery(/unmark_item:(.+)/, async ctx => {
   // Update the button text to show it's unmarked
   const keyboard = ctx.callbackQuery.message?.reply_markup;
   if (keyboard) {
-    const newKeyboard = new InlineKeyboard();
-    keyboard.inline_keyboard.forEach(row => {
-      row.forEach(button => {
-        if (button.callback_data === `unmark_item:${itemId}`) {
-          newKeyboard.text(item.item_name, `mark_item:${itemId}`).row();
-        } else {
-          newKeyboard.text(button.text, button.callback_data || '').row();
+    const newKeyboard = InlineKeyboard.from(keyboard.inline_keyboard.map(row =>
+      row.map(button => {
+        if ('callback_data' in button && button.callback_data === `unmark_item:${itemId}`) {
+          return { text: item.item_name, callback_data: `mark_item:${itemId}` };
         }
-      });
-    });
+        return button;
+      })
+    ));
     
     try {
       await ctx.editMessageReplyMarkup({ reply_markup: newKeyboard });
