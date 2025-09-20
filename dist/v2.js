@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const grammy_1 = require("grammy");
-const node_1 = require("grammy/webhooks/node");
+const grammy_2 = require("grammy");
 const http_1 = require("http");
 const fs_1 = __importDefault(require("fs"));
 // === CONFIG ===
@@ -861,7 +861,7 @@ if (isProduction) {
     bot.api.setWebhook(WEBHOOK_URL).then(() => {
         console.log('[DEBUG] Webhook set successfully');
         // Create HTTP server for webhooks
-        const server = (0, http_1.createServer)((0, node_1.webhookCallback)(bot, 'node'));
+        const server = (0, http_1.createServer)((0, grammy_2.webhookCallback)(bot, 'node'));
         server.listen(parseInt(PORT), () => {
             console.log('[DEBUG] V2 Bot webhook server started successfully on port', PORT);
         });
