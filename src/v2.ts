@@ -1137,31 +1137,6 @@ if (isProduction) {
             if (!webhookSet) {
               throw new Error('Failed to set webhook after all retries');
             }
-    if (WEBHOOK_URL) {
-      console.log('[DEBUG] Setting webhook to:', `${WEBHOOK_URL}/webhook`);
-      try {
-        await bot.api.setWebhook(`${WEBHOOK_URL}/webhook`);
-        console.log('[DEBUG] Webhook set successfully');
-            console.error('[ERROR] Failed to set webhook after retries:', error);
-            console.error('[ERROR] This might be due to:');
-            console.error('[ERROR] 1. Invalid BOT_TOKEN - check your .env file');
-            console.error('[ERROR] 2. Network connectivity issues');
-            console.error('[ERROR] 3. Telegram API temporary issues');
-            console.error('[ERROR] Bot will continue running but webhooks may not work properly');
-            
-            // Don't exit the process, let the server continue running
-            if ((error as Error).message.includes('404') || (error as Error).message.includes('Unauthorized')) {
-              console.error('[ERROR] BOT_TOKEN appears to be invalid! Please check your .env file.');
-      } catch (error) {
-        console.error('[ERROR] Webhook setup error stack:', (error as Error).stack);
-        if ((error as Error).message.includes('404: Not Found')) {
-          console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
-        }
-        process.exit(1);
-      }
-    } else {
-      console.log('[DEBUG] No WEBHOOK_URL provided, webhook not set');
-    }
   });
   
   // Add error handler for Express app
