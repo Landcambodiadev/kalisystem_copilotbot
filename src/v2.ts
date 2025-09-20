@@ -1084,58 +1084,29 @@ if (isProduction) {
       await bot.handleUpdate(req.body);
       console.log('[DEBUG] bot.handleUpdate completed successfully');
       res.status(200).send('OK');
-      console.log('[DEBUG] Sent 200 OK response');
-    } catch (error) {
-      console.error('[ERROR] Webhook error:', error);
-      console.error('[ERROR] Webhook error stack:', (error as Error).stack);
-      res.status(500).send('Error');
-      console.log('[DEBUG] Sent 500 Error response');
     }
-  });
-  
-  // Health check endpoint
-  app.get('/', (req, res) => {
     console.log('[DEBUG] Health check endpoint hit');
     res.send('KALI Order Bot V2 is running!');
     console.log('[DEBUG] Health check response sent');
   });
   
-  console.log('[DEBUG] Routes registered: POST /webhook, GET /');
-  
   // Start server
-  const port = parseInt(PORT || '3000');
-  console.log('[DEBUG] About to start server on port:', port);
-  app.listen(port, async () => {
     console.log('[DEBUG] V2 Bot webhook server started successfully on port', port);
-    console.log('[DEBUG] Server is listening and ready to receive requests');
     
-    // Add retry logic for webhook setup
     let retries = 3;
-    let webhookSet = false;
     
-    while (retries > 0 && !webhookSet) {
-      try {
         await bot.api.setWebhook(`${WEBHOOK_URL}/webhook`, {
-          drop_pending_updates: true,
           max_connections: 40,
           allowed_updates: ['message', 'callback_query', 'inline_query', 'poll_answer']
         });
         webhookSet = true;
         console.log('[DEBUG] Webhook set successfully');
-      } catch (retryError) {
         retries--;
-        console.log(`[DEBUG] Webhook setup attempt failed, retries left: ${retries}`);
         if (retries > 0) {
           console.log('[DEBUG] Waiting 2 seconds before retry...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        } else {
           throw retryError;
         }
-      }
     }
-    
-    if (!webhookSet) {
-      throw new Error('Failed to set webhook after all retries');
     }
     
     if (WEBHOOK_URL) {
@@ -1148,12 +1119,9 @@ if (isProduction) {
         console.error('[ERROR] This might be due to:');
         console.error('[ERROR] 1. Invalid BOT_TOKEN - check your .env file');
         console.error('[ERROR] 2. Network connectivity issues');
-        console.error('[ERROR] 3. Telegram API temporary issues');
         console.error('[ERROR] Bot will continue running but webhooks may not work properly');
         
-        // Don't exit the process, let the server continue running
         if ((error as Error).message.includes('404') || (error as Error).message.includes('Unauthorized')) {
-          console.error('[ERROR] BOT_TOKEN appears to be invalid! Please check your .env file.');
         }
         console.error('[ERROR] Webhook setup error stack:', (error as Error).stack);
         if ((error as Error).message.includes('404: Not Found')) {
@@ -1166,26 +1134,14 @@ if (isProduction) {
     }
   });
   
-  // Add error handler for Express app
-  app.on('error', (error) => {
-    console.error('[ERROR] Express app error:', error);
-    console.error('[ERROR] Express error stack:', error.stack);
-  });
-  
 } else {
-  console.log('[DEBUG] Starting V2 bot in POLLING mode for development...');
-  
   bot.start().then(() => {
-    console.log('[DEBUG] V2 Bot started successfully in polling mode!');
+    console.log('V2 Bot started successfully in polling mode!');
   }).catch((error) => {
-    console.error('[ERROR] Failed to start V2 bot:', error);
-    console.error('[ERROR] Bot start error stack:', error.stack);
+    console.error('Failed to start V2 bot:', error);
     if (error.message.includes('404: Not Found')) {
-      console.error('[ERROR] Invalid BOT_TOKEN! Please check your .env file and ensure the token is correct.');
-      console.error('[ERROR] Get a new token from @BotFather on Telegram if needed.');
+      console.error('Invalid BOT_TOKEN! Please check your .env file and ensure the token is correct.');
     }
     process.exit(1);
-  }).finally(() => {
-    console.log('[DEBUG] V2 Bot start() promise completed (either resolved or rejected)');
   });
 }
