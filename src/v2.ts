@@ -556,8 +556,10 @@ bot.inlineQuery(/.*/, async ctx => {
     
     await ctx.answerInlineQuery(results, { 
       cache_time: 0,
-      switch_pm_text: "Type 1 <space>",
-      switch_pm_parameter: "inline_help"
+      button: { 
+        text: "Type 1 <space>",
+        start_parameter: "inline_help"
+      }
     });
     return;
   }
@@ -583,8 +585,10 @@ bot.inlineQuery(/.*/, async ctx => {
     
     await ctx.answerInlineQuery(results, { 
       cache_time: 0,
-      switch_pm_text: "Type 1 <space>",
-      switch_pm_parameter: "inline_help"
+      button: { 
+        text: "Type 1 <space>",
+        start_parameter: "inline_help"
+      }
     });
     return;
   }
@@ -610,8 +614,10 @@ bot.inlineQuery(/.*/, async ctx => {
     
     await ctx.answerInlineQuery(results, { 
       cache_time: 0,
-      switch_pm_text: "Type 1 <space>",
-      switch_pm_parameter: "inline_help"
+      button: { 
+        text: "Type 1 <space>",
+        start_parameter: "inline_help"
+      }
     });
     return;
   }
@@ -670,8 +676,10 @@ bot.inlineQuery(/.*/, async ctx => {
   
   await ctx.answerInlineQuery(results, { 
     cache_time: 0,
-    switch_pm_text: "Type 1 <space>",
-    switch_pm_parameter: "inline_help"
+    button: { 
+      text: "Type 1 <space>",
+      start_parameter: "inline_help"
+    }
   });
 });
 
