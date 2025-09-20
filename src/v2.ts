@@ -1062,103 +1062,103 @@ console.log('[DEBUG] - NODE_ENV:', process.env.NODE_ENV);
 console.log('[DEBUG] - WEBHOOK_URL:', WEBHOOK_URL);
 console.log('[DEBUG] - PORT:', PORT);
 console.log('[DEBUG] - isProduction:', isProduction);
+// // Check if we should use webhooks (production) or polling (development)
+// const WEBHOOK_URL = process.env.WEBHOOK_URL;
+// const PORT = process.env.PORT;
+// const isProduction = process.env.NODE_ENV === 'production' || Boolean(WEBHOOK_URL);
 
-if (isProduction) {
-  console.log('[DEBUG] Starting V2 bot in WEBHOOK mode for production...');
-  console.log('[DEBUG] Webhook URL:', WEBHOOK_URL);
-  console.log('[DEBUG] Port:', PORT || '3000');
+// console.log('[DEBUG] Environment check:');
+// console.log('[DEBUG] - NODE_ENV:', process.env.NODE_ENV);
+// console.log('[DEBUG] - WEBHOOK_URL:', WEBHOOK_URL);
+// console.log('[DEBUG] - PORT:', PORT);
+// console.log('[DEBUG] - isProduction:', isProduction);
+
+// if (isProduction) {
+//   console.log('[DEBUG] Starting V2 bot in WEBHOOK mode for production...');
+//   console.log('[DEBUG] Webhook URL:', WEBHOOK_URL);
+//   console.log('[DEBUG] Port:', PORT || '3000');
   
-  // Create Express app for webhooks
-  const app = express();
-  app.use(express.json());
+//   // Create Express app for webhooks
+//   const app = express();
+//   app.use(express.json());
   
-  console.log('[DEBUG] Express app created and JSON middleware added');
+//   console.log('[DEBUG] Express app created and JSON middleware added');
   
-  // Webhook endpoint
-  app.post('/webhook', async (req, res) => {
-    console.log('[DEBUG] Webhook endpoint hit!');
-    console.log('[DEBUG] Request body keys:', Object.keys(req.body));
-    console.log('[DEBUG] Request body:', JSON.stringify(req.body, null, 2));
-    try {
-      console.log('[DEBUG] About to call bot.handleUpdate');
-      await bot.handleUpdate(req.body);
-      console.log('[DEBUG] bot.handleUpdate completed successfully');
-      res.status(200).send('OK');
-    } catch (error) {
-      console.error('[ERROR] Error handling webhook update:', error);
-      res.status(500).send('Error');
-    }
-  });
+//   // Webhook endpoint
+//   app.post('/webhook', async (req, res) => {
+//     console.log('[DEBUG] Webhook endpoint hit!');
+//     console.log('[DEBUG] Request body keys:', Object.keys(req.body));
+//     console.log('[DEBUG] Request body:', JSON.stringify(req.body, null, 2));
+//     try {
+//       console.log('[DEBUG] About to call bot.handleUpdate');
+//       await bot.handleUpdate(req.body);
+//       console.log('[DEBUG] bot.handleUpdate completed successfully');
+//       res.status(200).send('OK');
+//       console.log('[DEBUG] Sent 200 OK response');
+//     } catch (error) {
+//       console.error('[ERROR] Webhook error:', error);
+//       console.error('[ERROR] Webhook error stack:', error.stack);
+//       res.status(500).send('Error');
+//       console.log('[DEBUG] Sent 500 Error response');
+//     }
+//   });
   
-  // Health check endpoint
-  app.get('/', (req, res) => {
-    console.log('[DEBUG] Health check endpoint hit');
-    res.send('KALI Order Bot V2 is running!');
-    console.log('[DEBUG] Health check response sent');
-  });
+//   // Health check endpoint
+//   app.get('/', (req, res) => {
+//     console.log('[DEBUG] Health check endpoint hit');
+//     res.send('KALI Order Bot V2 is running!');
+//     console.log('[DEBUG] Health check response sent');
+//   });
   
-  // Start server
-  const port = PORT || 3000;
-  app.listen(port, () => {
-    console.log('[DEBUG] V2 Bot webhook server started successfully on port', port);
+//   console.log('[DEBUG] Routes registered: POST /webhook, GET /');
+  
+//   // Start server
+//   const port = parseInt(PORT || '3000');
+//   console.log('[DEBUG] About to start server on port:', port);
+//   app.listen(port, async () => {
+//     console.log('[DEBUG] V2 Bot webhook server started successfully on port', port);
+//     console.log('[DEBUG] Server is listening and ready to receive requests');
     
-    let retries = 3;
-    let webhookSet = false;
-    
-    const setWebhookWithRetry = async () => {
-      while (retries > 0 && !webhookSet) {
-        try {
-          await bot.api.setWebhook(`${WEBHOOK_URL}/webhook`, {
-            max_connections: 40,
-            allowed_updates: ['message', 'callback_query', 'inline_query', 'poll_answer']
-          });
-          webhookSet = true;
-          console.log('[DEBUG] Webhook set successfully');
-        } catch (retryError) {
-          console.error('[ERROR] Failed to set webhook, retries left:', retries - 1);
-          console.error('[ERROR] Error:', retryError);
-          retries--;
-          if (retries > 0) {
-            console.log('[DEBUG] Waiting 2 seconds before retry...');
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          } else {
-            throw retryError;
-          }
-        }
-      }
-    };
-    
-    if (WEBHOOK_URL) {
-      console.log('[DEBUG] Setting webhook to:', `${WEBHOOK_URL}/webhook`);
-      setWebhookWithRetry().catch((error) => {
-        console.error('[ERROR] Failed to set webhook after retries:', error);
-        console.error('[ERROR] This might be due to:');
-        console.error('[ERROR] 1. Invalid BOT_TOKEN - check your .env file');
-        console.error('[ERROR] 2. Network connectivity issues');
-        console.error('[ERROR] Bot will continue running but webhooks may not work properly');
-        
-        if ((error as Error).message.includes('404') || (error as Error).message.includes('Unauthorized')) {
-          console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
-        }
-        console.error('[ERROR] Webhook setup error stack:', (error as Error).stack);
-        if ((error as Error).message.includes('404: Not Found')) {
-          console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
-        }
-        process.exit(1);
-      });
-    } else {
-      console.log('[DEBUG] No WEBHOOK_URL provided, webhook not set');
-    }
-  });
+//     // Set webhook
+//     if (WEBHOOK_URL) {
+//       console.log('[DEBUG] Setting webhook to:', `${WEBHOOK_URL}/webhook`);
+//       try {
+//         await bot.api.setWebhook(`${WEBHOOK_URL}/webhook`);
+//         console.log('[DEBUG] Webhook set successfully');
+//         // Verify webhook was set
+//         const webhookInfo = await bot.api.getWebhookInfo();
+//         console.log('[DEBUG] Webhook info after setting:', JSON.stringify(webhookInfo, null, 2));
+//       } catch (error) {
+//         console.error('[ERROR] Failed to set webhook:', error);
+//         console.error('[ERROR] Webhook setup error stack:', error.stack);
+//         if (error.message.includes('404: Not Found')) {
+//           console.error('[ERROR] Invalid BOT_TOKEN! Please check your environment variables.');
+//         }
+//         process.exit(1);
+//       }
+//     } else {
+//       console.log('[DEBUG] No WEBHOOK_URL provided, webhook not set');
+//     }
+//   });
   
-} else {
+//   // Add error handler for Express app
+//   app.on('error', (error) => {
+//     console.error('[ERROR] Express app error:', error);
+//     console.error('[ERROR] Express error stack:', error.stack);
+//   });
+// } else {
+  console.log('[DEBUG] Starting V2 bot in POLLING mode for development...');
   bot.start().then(() => {
-    console.log('V2 Bot started successfully in polling mode!');
+    console.log('[DEBUG] V2 Bot started successfully in polling mode!');
   }).catch((error) => {
-    console.error('Failed to start V2 bot:', error);
+    console.error('[ERROR] Failed to start V2 bot:', error);
+    console.error('[ERROR] Bot start error stack:', error.stack);
     if (error.message.includes('404: Not Found')) {
-      console.error('Invalid BOT_TOKEN! Please check your .env file and ensure the token is correct.');
+      console.error('[ERROR] Invalid BOT_TOKEN! Please check your .env file and ensure the token is correct.');
+      console.error('[ERROR] Get a new token from @BotFather on Telegram if needed.');
     }
     process.exit(1);
+  }).finally(() => {
+    console.log('[DEBUG] V2 Bot start() promise completed (either resolved or rejected)');
   });
-}
+// }
